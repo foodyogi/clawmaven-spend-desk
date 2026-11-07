@@ -2,6 +2,18 @@
 
 All notable user-facing changes to this app are documented here.
 
+## 0.1.5 — 2026-11-07
+
+### Changed
+
+- Netlify-ready: removed the starter template's Google Analytics and Tag Manager IDs and its trusted auth origins from `netlify.toml`. `BETTER_AUTH_TRUSTED_ORIGINS` and all runtime secrets now come from Netlify environment variables (see `DEPLOY.md`).
+- The embedded coding-agent harness (Claude Code, Codex, Pi) is turned off; Spend Desk does not use it.
+- The Home page no longer shows the template's Documentation and Connect with us links, and the page title, description and app manifest describe Spend Desk.
+
+### Fixed
+
+- `policy.json` is bundled into the server functions, so the policy loads on Netlify, where repo files are not available at runtime.
+
 ## 0.1.4 — 2026-11-07
 
 ### Fixed

@@ -57,12 +57,6 @@ const messages = {
     untitledChat: "बिना शीर्षक वाली चैट",
   },
   home: {
-    communityTitle: "हमसे जुड़ें",
-    docsAddAction: "क्रिया जोड़ें",
-    docsAddPage: "पेज जोड़ें",
-    docsGettingStarted: "शुरुआत करें",
-    docsKeyConcepts: "मुख्य अवधारणाएं",
-    docsTitle: "दस्तावेज़",
     title: "शुरू करें",
   },
   navigation: {

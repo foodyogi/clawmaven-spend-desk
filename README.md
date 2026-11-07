@@ -1,33 +1,34 @@
-# Chat
+# ClawMaven Spend Desk
 
-The minimal agent-native starter app — a clean, ChatGPT-style shell with chat at
-the center, durable threads, standard app navigation, auth, live sync, and
-actions. Start here when you want a real browser app to build on without
-committing to a domain template.
+An AI agent that pays a small team's contractors through **PayPal Payouts (sandbox)** once work is marked done, with guardrails:
 
-**Live app: [chat.agent-native.com](https://chat.agent-native.com?utm_source=github&utm_medium=referral&utm_content=chat-readme)**
+- Payouts up to **$25** run automatically.
+- Larger payouts pause for a **human to edit and approve** (or reject).
+- Anything over the **remaining monthly budget ($200)** is blocked before it reaches PayPal.
+- Every attempt writes a **receipt**.
 
-Chat is the basic agent-native app starting point. It gives you the app-agent
-loop wired end to end and one example action, so you can add your own UI, data,
-and actions on top.
+**Sandbox only. No real money moves.**
 
-## Features
+## Run locally
 
-- ChatGPT-style shell with a threads list and durable chat history.
-- Auth, live sync, and application state wired out of the box.
-- The action surface the agent and UI share, plus one example action to copy.
-- A minimal, brandable base for any domain app.
-
-## Develop locally
-
-Scaffold your own copy and run it:
+Requires Node.js 22.22+ and pnpm.
 
 ```bash
-npx --yes @agent-native/core@latest create my-app --standalone --template chat
-cd my-app
-corepack enable
+cp .env.example .env   # fill in sandbox and LLM values
 pnpm install
 pnpm dev
 ```
 
-Full docs: [agent-native.com/docs/template-chat](https://agent-native.com/docs/template-chat?utm_source=github&utm_medium=referral&utm_content=chat-readme).
+The Spend Desk page is at `/desk`. Run the tests with `pnpm test`, and the PayPal sandbox smoke test (sends one $1.00 sandbox payout) with `pnpm paypal:smoke`.
+
+## Deploy
+
+See [DEPLOY.md](./DEPLOY.md) for Netlify settings and environment variables.
+
+## Built with
+
+Started from the [Agent-Native](https://github.com/BuilderIO/agent-native) chat template (Builder.io). Spend Desk's actions, policy gate, PayPal sandbox wiring and screens are new in this repo.
+
+## License
+
+[MIT](./LICENSE) © 2026 Paul Rodney Turner

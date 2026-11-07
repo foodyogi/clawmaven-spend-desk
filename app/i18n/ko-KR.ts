@@ -59,12 +59,6 @@ const messages = {
     untitledChat: "제목 없는 채팅",
   },
   home: {
-    communityTitle: "함께하기",
-    docsAddAction: "작업 추가",
-    docsAddPage: "페이지 추가",
-    docsGettingStarted: "시작하기",
-    docsKeyConcepts: "핵심 개념",
-    docsTitle: "문서",
     title: "시작하기",
   },
   navigation: {

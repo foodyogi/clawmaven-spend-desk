@@ -1,18 +1,26 @@
+# Netlify build for ClawMaven Spend Desk. Runtime secrets and
+# BETTER_AUTH_TRUSTED_ORIGINS go in the Netlify UI with the Functions scope:
+# variables in this file only reach the build, and they override UI values
+# there. See DEPLOY.md.
+#
+# Functions region: Netlify's default, cmh (Ohio, AWS us-east-2), already sits
+# next to the Neon database. Changing it needs a Netlify Pro plan, so it is not
+# set here.
+
 [build]
+# Netlify's database extension URL wins over DATABASE_URL (Neon) when present.
+# Production deploys then run the release migrations: framework tables, the
+# Spend Desk tables and the idempotent demo seed.
 command = "export DATABASE_URL=\"${NETLIFY_DATABASE_URL:-$DATABASE_URL}\" && NITRO_PRESET=netlify pnpm build && if [ \"${CONTEXT:-}\" = \"production\" ]; then pnpm migrate:production; fi"
 publish = "dist"
 functions = ".netlify/functions-internal"
 
 [build.environment]
-GA_MEASUREMENT_ID = "G-ESF7FYXGN9"
-GTM_CONTAINER_ID = "GTM-N3WSTXZ"
 NITRO_PRESET = "netlify"
 NPM_CONFIG_PRODUCTION = "false"
 
 [context.production.environment]
-AGENT_NATIVE_HOSTED_HARNESS = "true"
 AGENT_NATIVE_DISABLE_KEEP_WARM_BACKGROUND = "1"
-BETTER_AUTH_TRUSTED_ORIGINS = "https://starter.agent-native.com,https://chat.agent-native.com"
 # Production release migrations own schema setup; request functions must skip
-# migration probes on every serverless invocation.
+# migration probes on every serverless invocation. Read at build time.
 AGENT_NATIVE_RELEASE_MIGRATIONS = "1"

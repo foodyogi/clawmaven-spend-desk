@@ -54,12 +54,6 @@ const messages = {
     untitledChat: "未命名聊天",
   },
   home: {
-    communityTitle: "联系我们",
-    docsAddAction: "添加操作",
-    docsAddPage: "添加页面",
-    docsGettingStarted: "快速开始",
-    docsKeyConcepts: "核心概念",
-    docsTitle: "文档",
     title: "开始使用",
   },
   navigation: {

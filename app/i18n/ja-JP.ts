@@ -58,12 +58,6 @@ const messages = {
     untitledChat: "無題のチャット",
   },
   home: {
-    communityTitle: "コミュニティ",
-    docsAddAction: "アクションを追加",
-    docsAddPage: "ページを追加",
-    docsGettingStarted: "はじめに",
-    docsKeyConcepts: "主要な概念",
-    docsTitle: "ドキュメント",
     title: "はじめに",
   },
   navigation: {

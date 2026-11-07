@@ -58,12 +58,6 @@ const messages = {
     untitledChat: "Untitled chat",
   },
   home: {
-    communityTitle: "Connect with us",
-    docsAddAction: "Add an action",
-    docsAddPage: "Add a page",
-    docsGettingStarted: "Getting started",
-    docsKeyConcepts: "Key concepts",
-    docsTitle: "Documentation",
     title: "Get started",
   },
   navigation: {

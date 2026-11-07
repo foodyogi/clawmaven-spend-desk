@@ -59,12 +59,6 @@ const messages = {
     untitledChat: "Chat sem título",
   },
   home: {
-    communityTitle: "Fale com a gente",
-    docsAddAction: "Adicionar uma ação",
-    docsAddPage: "Adicionar uma página",
-    docsGettingStarted: "Primeiros passos",
-    docsKeyConcepts: "Conceitos principais",
-    docsTitle: "Documentação",
     title: "Comece aqui",
   },
   navigation: {

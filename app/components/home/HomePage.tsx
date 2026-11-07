@@ -11,25 +11,10 @@ import { CoreAgentKitRoot } from "@agent-native/toolkit/app/chat/agentkit-chat/i
 import { useRealtimeVoiceModeOptional } from "@agent-native/toolkit/app/chat/composer";
 import { WaveBackground } from "@agent-native/toolkit/app/shared";
 import { AgentNativeIcon } from "@agent-native/toolkit/app/shared/AgentNativeIcon";
-import {
-  IconBook,
-  IconBrandDiscord,
-  IconBrandGithub,
-  IconUsers,
-} from "@tabler/icons-react";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 
 import { useChatComposerMenuItems } from "@/components/ChatComposerContext";
-import { Button } from "@/components/ui/button";
-import {
-  Item,
-  ItemContent,
-  ItemFooter,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item";
-import { Separator } from "@/components/ui/separator";
 import { getChatHomeThreadId } from "@/lib/chat-home-thread";
 import {
   chatHandoffComposerOptions,
@@ -39,9 +24,6 @@ import {
 } from "@/lib/chat-paths";
 import { TAB_ID } from "@/lib/tab-id";
 
-const DOCS_URL = "https://www.agent-native.com/docs";
-const GITHUB_URL = "https://github.com/BuilderIO/agent-native";
-const DISCORD_URL = "https://discord.gg/qm82StQ2NC";
 
 /**
  * The same AgentKit composer the chat page uses, so Connect AI and the model
@@ -156,49 +138,6 @@ function HomeAgentComposerInput({
   );
 }
 
-function ResourceLink({
-  href,
-  icon,
-  children,
-}: {
-  href: string;
-  icon?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <Button asChild variant="outline" size="sm">
-      <a href={href} target="_blank" rel="noreferrer">
-        {icon}
-        {children}
-      </a>
-    </Button>
-  );
-}
-
-function ResourceColumn({
-  icon,
-  title,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <Item asChild className="content-start px-6 py-8 sm:px-10">
-      <section>
-        <ItemMedia variant="icon">{icon}</ItemMedia>
-        <ItemContent>
-          <ItemTitle role="heading" aria-level={2}>
-            {title}
-          </ItemTitle>
-        </ItemContent>
-        <ItemFooter className="flex-wrap justify-start">{children}</ItemFooter>
-      </section>
-    </Item>
-  );
-}
-
 export default function HomePage() {
   const t = useT();
 
@@ -218,33 +157,6 @@ export default function HomePage() {
         </h1>
         <HomeAgentComposer />
       </section>
-
-      <Separator />
-      <div className="grid md:grid-cols-[1fr_auto_1fr]">
-        <ResourceColumn icon={<IconBook />} title={t("home.docsTitle")}>
-          <ResourceLink href={`${DOCS_URL}/getting-started`}>
-            {t("home.docsGettingStarted")}
-          </ResourceLink>
-          <ResourceLink href={`${DOCS_URL}/getting-started-actions`}>
-            {t("home.docsAddAction")}
-          </ResourceLink>
-          <ResourceLink href={`${DOCS_URL}/getting-started-pages`}>
-            {t("home.docsAddPage")}
-          </ResourceLink>
-          <ResourceLink href={`${DOCS_URL}/key-concepts`}>
-            {t("home.docsKeyConcepts")}
-          </ResourceLink>
-        </ResourceColumn>
-        <Separator orientation="vertical" className="hidden md:block" />
-        <ResourceColumn icon={<IconUsers />} title={t("home.communityTitle")}>
-          <ResourceLink href={GITHUB_URL} icon={<IconBrandGithub />}>
-            GitHub
-          </ResourceLink>
-          <ResourceLink href={DISCORD_URL} icon={<IconBrandDiscord />}>
-            Discord
-          </ResourceLink>
-        </ResourceColumn>
-      </div>
     </div>
   );
 }

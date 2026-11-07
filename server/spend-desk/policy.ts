@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
-import path from "node:path";
 
 import { z } from "zod";
+
+// Imported so the bundler ships it inside serverless functions (Netlify has no
+// repo files at runtime). POLICY_PATH can still point at another file.
+import defaultPolicy from "../../policy.json";
 
 const policySchema = z.object({
   monthlyBudgetCapUsd: z.number().positive(),
@@ -20,8 +23,8 @@ let cached: Policy | undefined;
 export function loadPolicy(): Policy {
   if (cached) return cached;
   // guard:allow-env-credential — POLICY_PATH is a deploy-level config file path, not a credential
-  const file = process.env.POLICY_PATH || path.join(process.cwd(), "policy.json");
-  cached = policySchema.parse(JSON.parse(readFileSync(file, "utf8")));
+  const file = process.env.POLICY_PATH;
+  cached = policySchema.parse(file ? JSON.parse(readFileSync(file, "utf8")) : defaultPolicy);
   return cached;
 }
 

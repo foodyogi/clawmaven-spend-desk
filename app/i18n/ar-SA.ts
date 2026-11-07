@@ -56,12 +56,6 @@ const messages = {
     untitledChat: "محادثة بلا عنوان",
   },
   home: {
-    communityTitle: "تواصل معنا",
-    docsAddAction: "إضافة إجراء",
-    docsAddPage: "إضافة صفحة",
-    docsGettingStarted: "البدء",
-    docsKeyConcepts: "المفاهيم الأساسية",
-    docsTitle: "المستندات",
     title: "ابدأ الآن",
   },
   navigation: {

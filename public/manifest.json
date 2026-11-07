@@ -1,8 +1,8 @@
 {
-  "name": "Clawmaven Spend Desk",
-  "short_name": "Clawmaven Spend Desk",
-  "description": "Workspace app for Clawmaven Spend Desk.",
-  "start_url": "./home",
+  "name": "ClawMaven Spend Desk",
+  "short_name": "Spend Desk",
+  "description": "AI contractor payouts through PayPal Payouts (sandbox) with budget caps, approval gates and receipts.",
+  "start_url": "./desk",
   "background_color": "#111111",
   "theme_color": "#18181B",
   "icons": [
