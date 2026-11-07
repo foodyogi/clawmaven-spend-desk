@@ -1,0 +1,12 @@
+{
+  "monthlyBudgetCapUsd": 200,
+  "autoApproveLimitUsd": 25,
+  "currency": "USD",
+  "allowedPayees": [
+    "sb-ymuio53707515@personal.example.com",
+    "sb-zyjmt53707494@personal.example.com",
+    "sb-houoq53707143@personal.example.com"
+  ],
+  "demoMonth": "2026-11",
+  "notes": "Demo policy for ClawMaven Spend Desk. allowedPayees are PayPal sandbox personal accounts (P1, P2, P3)."
+}

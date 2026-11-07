@@ -1,0 +1,60 @@
+import type { MigrationEntry } from "@agent-native/core/db";
+
+import { seedDemo } from "../spend-desk/seed.js";
+
+export const SPEND_DESK_MIGRATIONS: MigrationEntry[] = [
+  {
+    version: 1,
+    name: "spend-desk-tables",
+    sql: `CREATE TABLE IF NOT EXISTS spend_tasks (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  payee_email TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS spend_payments (
+  id TEXT PRIMARY KEY,
+  task_id TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  payee_email TEXT NOT NULL,
+  memo TEXT NOT NULL,
+  status TEXT NOT NULL,
+  proposed_by TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS spend_payments_task_id_idx ON spend_payments (task_id);
+CREATE TABLE IF NOT EXISTS spend_receipts (
+  id TEXT PRIMARY KEY,
+  payment_id TEXT NOT NULL,
+  task_id TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  payee_email TEXT NOT NULL,
+  policy_result TEXT NOT NULL,
+  approver TEXT NOT NULL,
+  paypal_batch_id TEXT,
+  paypal_item_id TEXT,
+  budget_remaining_after_cents INTEGER NOT NULL,
+  detail TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS spend_receipts_payment_created_idx ON spend_receipts (payment_id, created_at);
+CREATE TABLE IF NOT EXISTS spend_budget (
+  month TEXT PRIMARY KEY,
+  cap_cents INTEGER NOT NULL,
+  spent_cents INTEGER NOT NULL,
+  auto_approve_limit_cents INTEGER NOT NULL
+);`,
+  },
+  {
+    version: 2,
+    name: "spend-desk-seed",
+    sql: {},
+    run: async (exec) => {
+      await seedDemo(exec);
+    },
+  },
+];
