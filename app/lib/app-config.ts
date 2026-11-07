@@ -9,4 +9,4 @@ export const APP_NAME =
 
 export const APP_TITLE =
   rawAppTitle === APP_TITLE_PLACEHOLDER ? "Chat" : rawAppTitle;
-export const APP_VERSION = "0.1.2";
+export const APP_VERSION = "0.1.3";

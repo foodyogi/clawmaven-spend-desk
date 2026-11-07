@@ -58,3 +58,17 @@ export function needsHumanApproval(input: {
   if (input.amountCents <= input.autoApproveLimitCents) return false;
   return true;
 }
+
+export type PaymentOutlook = "auto_pay" | "needs_approval" | "blocked_over_budget" | "blocked_payee_not_allowed";
+
+/** What executePayout would do with an open payment right now (same rules as run()). */
+export function paymentOutlook(input: {
+  amountCents: number;
+  remainingCents: number;
+  autoApproveLimitCents: number;
+  payeeAllowed: boolean;
+}): PaymentOutlook {
+  if (!input.payeeAllowed) return "blocked_payee_not_allowed";
+  if (input.amountCents > input.remainingCents) return "blocked_over_budget";
+  return needsHumanApproval(input) ? "needs_approval" : "auto_pay";
+}

@@ -8,6 +8,7 @@ import {
 } from "@agent-native/toolkit/composer";
 
 export const HOME_PATH = "/home";
+export const DESK_PATH = "/desk";
 export const NEW_CHAT_PATH = "/chat";
 
 const FAILED_CHAT_HANDOFF_PREFIX = "agent-native.chat.failed-handoff:";

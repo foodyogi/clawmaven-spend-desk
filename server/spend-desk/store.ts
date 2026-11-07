@@ -96,3 +96,13 @@ export async function listReceiptRows(paymentId?: string): Promise<ReceiptRow[]>
   const filtered = paymentId ? query.where(eq(spendReceipts.paymentId, paymentId)) : query;
   return filtered.orderBy(desc(spendReceipts.createdAt), desc(spendReceipts.id));
 }
+
+/** All payments with their task title, oldest first (the order they were proposed). */
+export async function listPaymentRows(): Promise<(PaymentRow & { taskTitle: string | null })[]> {
+  const rows = await getDb()
+    .select({ payment: spendPayments, taskTitle: spendTasks.title })
+    .from(spendPayments)
+    .leftJoin(spendTasks, eq(spendPayments.taskId, spendTasks.id))
+    .orderBy(spendPayments.createdAt, spendPayments.id);
+  return rows.map((r) => ({ ...r.payment, taskTitle: r.taskTitle }));
+}

@@ -31,3 +31,18 @@ Use `adding-a-feature` for functional parity and `frontend-design` for a user-fa
 Before building common workspace or agent UI, read `agent-native-toolkit`; for supported customization, read `customizing-agent-native`.
 
 - Guarded verification: run `pnpm agent-native:doctor`; fix findings before done.
+
+## Spend Desk
+
+The Spend Desk page is `/desk` (view `desk`): Budget, Approval queue and Receipts ledger beside the agent chat. Policy lives in `policy.json`; `execute-payout` enforces it (≤ $25 auto-pays, above that needs human approval via `needsApproval`, over the remaining monthly budget is blocked before PayPal). PayPal Payouts is sandbox-only.
+
+| Action | Purpose |
+| --- | --- |
+| `list-completed-tasks` | Tasks marked done and ready for a payment proposal (`status: "all"` for every task) |
+| `propose-payment` | Draft a payment for a completed task (persists as `proposed`) |
+| `edit-payment` | Change amount, payee or memo of an open payment; never pays |
+| `list-payments` | Payments with task title, status and, for open ones, the policy `outlook` |
+| `execute-payout` | Pay or reject (`decision`) an open payment under the policy; restate `amountUsd` and `payeeEmail`; always writes a receipt |
+| `get-budget` | Monthly cap, spent, remaining, auto-approve limit |
+| `list-receipts` | Receipts newest first, optionally by `paymentId` |
+| `reset-demo` | UI/CLI only (`agentTool: false`): clear payments, receipts and spend, restore seed tasks |
