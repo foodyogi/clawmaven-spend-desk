@@ -2,6 +2,13 @@
 
 All notable user-facing changes to this app are documented here.
 
+## 0.1.4 — 2026-11-07
+
+### Fixed
+
+- The first chat message after a page load no longer fails with an Anthropic 404 for model `gpt-6-luna`. Before the engine catalog loaded, the composer sent the framework's default OpenAI model to the anthropic engine. Chat requests now carry a model only when the active engine offers it; otherwise the server uses the engine default (`claude-sonnet-5-5`).
+- A saved model the active engine does not offer is replaced with the engine default, and the model picker shows a model name instead of a blank label while it loads.
+
 ## 2026-10-10
 
 ### Fixed
