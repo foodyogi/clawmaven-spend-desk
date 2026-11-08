@@ -1,9 +1,9 @@
 import { ExtensionViewerPage } from "@agent-native/toolkit/app/extensions";
 
-import { APP_TITLE } from "@/lib/app-config";
+import { pageMeta } from "@/lib/app-config";
 
 export function meta() {
-  return [{ title: `Extension — ${APP_TITLE}` }];
+  return pageMeta("Extension");
 }
 
 export default function ExtensionViewerRoute() {

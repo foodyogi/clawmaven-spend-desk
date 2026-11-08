@@ -12,8 +12,8 @@
   --card-foreground: 0 0% 10%;
   --popover: 0 0% 100%;
   --popover-foreground: 0 0% 10%;
-  --primary: 0 0% 15%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 215 85% 45%; /* ClawMaven blue */
+  --primary-foreground: 215 85% 98%;
   --secondary: 0 0% 95%;
   --secondary-foreground: 0 0% 15%;
   --muted: 0 0% 95%;
@@ -24,16 +24,16 @@
   --destructive-foreground: 0 0% 98%;
   --border: 0 0% 90%;
   --input: 0 0% 90%;
-  --ring: 0 0% 40%;
+  --ring: 215 85% 45%;
   --radius: 0.5rem;
   --sidebar-background: 0 0% 97%;
   --sidebar-foreground: 0 0% 43%;
-  --sidebar-primary: 0 0% 15%;
-  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary: 215 85% 45%;
+  --sidebar-primary-foreground: 215 85% 98%;
   --sidebar-accent: 0 0% 95%;
   --sidebar-accent-foreground: 0 0% 15%;
   --sidebar-border: 0 0% 90%;
-  --sidebar-ring: 0 0% 40%;
+  --sidebar-ring: 215 85% 45%;
   --chat-sidebar-width: 17.5rem;
   --chat-sidebar-content-inset: 0.5rem;
   --chat-sidebar-row-padding: 0.75rem;
@@ -235,8 +235,8 @@
   --card-foreground: 0 0% 90%;
   --popover: 0 0% 15%;
   --popover-foreground: 0 0% 90%;
-  --primary: 0 0% 75%;
-  --primary-foreground: 0 0% 10%;
+  --primary: 215 85% 55%; /* ClawMaven blue */
+  --primary-foreground: 215 85% 98%;
   --secondary: 0 0% 18%;
   --secondary-foreground: 0 0% 90%;
   --muted: 0 0% 16%;
@@ -247,16 +247,16 @@
   --destructive-foreground: 0 0% 98%;
   --border: 0 0% 24%;
   --input: 0 0% 24%;
-  --ring: 0 0% 60%;
+  --ring: 215 85% 55%;
   --radius: 0.5rem;
   --sidebar-background: 0 0% 10%;
   --sidebar-foreground: 0 0% 60%;
-  --sidebar-primary: 0 0% 75%;
-  --sidebar-primary-foreground: 0 0% 10%;
+  --sidebar-primary: 215 85% 55%;
+  --sidebar-primary-foreground: 215 85% 98%;
   --sidebar-accent: 0 0% 16%;
   --sidebar-accent-foreground: 0 0% 90%;
   --sidebar-border: 0 0% 20%;
-  --sidebar-ring: 0 0% 60%;
+  --sidebar-ring: 215 85% 55%;
 }
 
 @layer base {

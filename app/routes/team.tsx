@@ -1,9 +1,9 @@
 import { Navigate } from "react-router";
 
-import { APP_TITLE } from "@/lib/app-config";
+import { pageMeta } from "@/lib/app-config";
 
 export function meta() {
-  return [{ title: `Team — ${APP_TITLE}` }];
+  return pageMeta("Team");
 }
 
 export default function TeamRoute() {

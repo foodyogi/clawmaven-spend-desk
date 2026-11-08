@@ -6,12 +6,12 @@ import {
   useAgentSettingsTabs,
 } from "@agent-native/toolkit/app/settings";
 
-import { APP_TITLE } from "@/lib/app-config";
+import { pageMeta } from "@/lib/app-config";
 
 import changelog from "../../CHANGELOG.md?raw";
 
 export function meta() {
-  return [{ title: `Settings - ${APP_TITLE}` }];
+  return pageMeta("Settings");
 }
 
 // Chat has no app rows here: core Preferences owns the interface language.

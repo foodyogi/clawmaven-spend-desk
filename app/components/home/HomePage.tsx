@@ -1,3 +1,4 @@
+import { appPath } from "@agent-native/core/client/api-path";
 import {
   markAgentChatHomeHandoff,
   navigateWithAgentChatViewTransition,
@@ -10,7 +11,6 @@ import { CoreComposerRuntimeProvider } from "@agent-native/toolkit/app/chat/agen
 import { CoreAgentKitRoot } from "@agent-native/toolkit/app/chat/agentkit-chat/index";
 import { useRealtimeVoiceModeOptional } from "@agent-native/toolkit/app/chat/composer";
 import { WaveBackground } from "@agent-native/toolkit/app/shared";
-import { AgentNativeIcon } from "@agent-native/toolkit/app/shared/AgentNativeIcon";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -148,9 +148,13 @@ export default function HomePage() {
           matchPageSurface
           className="pointer-events-none absolute inset-0 -z-10"
         />
-        <AgentNativeIcon
-          aria-hidden="true"
-          className="h-8 w-14 text-foreground"
+        <img
+          src={appPath("/clawmaven-logo.png")}
+          alt="ClawMaven"
+          width={160}
+          height={160}
+          className="size-40 -mb-4"
+          draggable={false}
         />
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
           {t("home.title")}

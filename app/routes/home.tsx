@@ -1,9 +1,8 @@
 import HomePage from "@/components/home/HomePage";
-import { APP_TITLE } from "@/lib/app-config";
+import { APP_DESCRIPTION, APP_TITLE } from "@/lib/app-config";
 
 const SEO_TITLE = `${APP_TITLE} - AI contractor payouts with budget guardrails`;
-const SEO_DESCRIPTION =
-  "An AI agent pays contractors through PayPal Payouts (sandbox): small payouts run automatically, larger ones wait for human approval, and anything over the monthly budget is blocked. Every attempt writes a receipt.";
+const SEO_DESCRIPTION = APP_DESCRIPTION;
 
 export function meta() {
   return [

@@ -2,6 +2,15 @@
 
 All notable user-facing changes to this app are documented here.
 
+## 0.1.6 — 2026-11-07
+
+### Changed
+
+- ClawMaven branding replaces the Agent-Native marks: favicon, app icons and manifest, the sidebar mark, the Home logo, and the sign-in page mark.
+- The sign-in page shows "ClawMaven Spend Desk" with the line "Governed agent payouts. Small ones pay, big ones wait for you, over-budget ones never leave."
+- Buttons, the budget bar and focus rings use the ClawMaven blue in light and dark themes. Status colours are unchanged.
+- Every page's browser title and description name ClawMaven Spend Desk.
+
 ## 0.1.5 — 2026-11-07
 
 ### Changed

@@ -28,11 +28,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { APP_TITLE, APP_VERSION } from "@/lib/app-config";
+import { APP_TITLE, APP_VERSION, pageMeta } from "@/lib/app-config";
 import { cn } from "@/lib/utils";
 
 export function meta() {
-  return [{ title: `Spend Desk — ${APP_TITLE}` }];
+  return pageMeta("Spend Desk");
 }
 
 type PaymentsResult = {

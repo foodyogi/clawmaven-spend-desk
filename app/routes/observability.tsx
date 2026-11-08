@@ -3,9 +3,10 @@ import { useSetPageTitle } from "@agent-native/toolkit/app-shell";
 import { ObservabilityDashboard } from "@agent-native/toolkit/app/observability";
 
 import enUS from "@/i18n/en-US";
+import { pageMeta } from "@/lib/app-config";
 
 export function meta() {
-  return [{ title: enUS.pages.observabilityPageTitle }];
+  return pageMeta(enUS.pages.observabilityPageTitle);
 }
 
 export default function ObservabilityPage() {

@@ -12,7 +12,6 @@ import {
 } from "@agent-native/toolkit/app/chat/ownership-history";
 import { OrgSwitcher } from "@agent-native/toolkit/app/org";
 import { openCommandMenu } from "@agent-native/toolkit/app/shared";
-import { AgentNativeIcon } from "@agent-native/toolkit/app/shared/AgentNativeIcon";
 import {
   IconEdit,
   IconHome,
@@ -106,6 +105,21 @@ function ThreadHistoryTitle({
         />
       ) : null}
     </span>
+  );
+}
+
+/** The ClawMaven shield mark; the 48px source renders crisp at 24px on 2x screens. */
+function ClawMavenMark() {
+  return (
+    <img
+      src={appPath("/clawmaven-favicon-48.png")}
+      alt=""
+      aria-hidden="true"
+      width={24}
+      height={24}
+      className="size-6 shrink-0"
+      draggable={false}
+    />
   );
 }
 
@@ -416,10 +430,7 @@ export function Sidebar({
                 aria-label={APP_TITLE}
                 className="flex size-8 items-center justify-center rounded outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               >
-                <AgentNativeIcon
-                  aria-hidden="true"
-                  className="h-3.5 w-6 text-sidebar-accent-foreground"
-                />
+                <ClawMavenMark />
               </Link>
             </TooltipTrigger>
             <TooltipContent side="right">{APP_TITLE}</TooltipContent>
@@ -430,10 +441,7 @@ export function Sidebar({
               to="/"
               className="flex min-w-0 flex-1 items-center gap-3 rounded outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
             >
-              <AgentNativeIcon
-                aria-hidden="true"
-                className="h-3.5 w-6 shrink-0 text-sidebar-accent-foreground"
-              />
+              <ClawMavenMark />
               <span className="truncate text-sm font-semibold text-sidebar-accent-foreground">
                 {APP_TITLE}
               </span>
