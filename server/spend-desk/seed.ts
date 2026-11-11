@@ -27,9 +27,19 @@ export async function seedDemo(exec: DbExec): Promise<void> {
     ON CONFLICT (month) DO NOTHING`);
 }
 
-/** Clears payments, receipts and spend, restores the seed tasks, then re-seeds. */
+/** Inserts the default spend policy from policy.json. Safe to run repeatedly. */
+export async function seedPolicy(exec: DbExec): Promise<void> {
+  const policy = loadPolicy();
+  await exec.execute(sql`INSERT INTO spend_policy (id, monthly_cap_cents, auto_approve_limit_cents, allowed_payees, updated_by)
+    VALUES ('active', ${sql.value(toCents(policy.monthlyBudgetCapUsd))}, ${sql.value(toCents(policy.autoApproveLimitUsd))}, ${sql.value(JSON.stringify(policy.allowedPayees))}::jsonb, 'policy.json')
+    ON CONFLICT (id) DO NOTHING`);
+}
+
+/** Clears payments, receipts and spend, restores the seed tasks and the default policy. */
 export async function resetDemo(exec: DbExec): Promise<void> {
   const policy = loadPolicy();
+  await exec.execute(sql`DELETE FROM spend_policy WHERE id = 'active'`);
+  await seedPolicy(exec);
   await exec.execute(sql`DELETE FROM spend_receipts`);
   await exec.execute(sql`DELETE FROM spend_payments`);
   await exec.execute(sql`DELETE FROM spend_tasks WHERE id IN ${sql.in(SEED_TASKS.map((t) => t.id))}`);

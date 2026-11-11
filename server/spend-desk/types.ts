@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { toUsd } from "./policy.js";
-import type { BudgetRow, PaymentRow, ReceiptRow, TaskRow } from "./store.js";
+import { POLICY_LIMITS, toUsd } from "./policy.js";
+import type { ActivePolicy, BudgetRow, PaymentRow, ReceiptRow, TaskRow } from "./store.js";
 
 export const taskOut = z.object({
   id: z.string(),
@@ -91,6 +91,24 @@ export const toBudget = (r: BudgetRow): z.infer<typeof budgetOut> => ({
   month: r.month,
   capUsd: toUsd(r.capCents),
   spentUsd: toUsd(r.spentCents),
-  remainingUsd: toUsd(r.capCents - r.spentCents),
+  remainingUsd: toUsd(Math.max(0, r.capCents - r.spentCents)),
   autoApproveLimitUsd: toUsd(r.autoApproveLimitCents),
+});
+
+export const policyOut = z.object({
+  monthlyBudgetCapUsd: z.number(),
+  autoApproveLimitUsd: z.number(),
+  allowedPayees: z.array(z.string()),
+  updatedAt: z.string().nullable(),
+  updatedBy: z.string(),
+  limits: z.object({ minCapUsd: z.number(), maxCapUsd: z.number(), maxPayees: z.number() }),
+});
+
+export const toPolicy = (p: ActivePolicy): z.infer<typeof policyOut> => ({
+  monthlyBudgetCapUsd: toUsd(p.monthlyCapCents),
+  autoApproveLimitUsd: toUsd(p.autoApproveLimitCents),
+  allowedPayees: p.allowedPayees,
+  updatedAt: p.updatedAt ? p.updatedAt.toISOString() : null,
+  updatedBy: p.updatedBy,
+  limits: { ...POLICY_LIMITS },
 });

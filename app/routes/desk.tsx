@@ -1,6 +1,6 @@
 import { useActionMutation, useActionQuery } from "@agent-native/core/client/hooks";
 import { useSetHeaderActions, useSetPageTitle } from "@agent-native/toolkit/app-shell/header-actions";
-import { IconEdit, IconRefresh } from "@tabler/icons-react";
+import { IconEdit, IconRefresh, IconShieldCheck } from "@tabler/icons-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { APP_TITLE, APP_VERSION, pageMeta } from "@/lib/app-config";
 import { cn } from "@/lib/utils";
 
@@ -94,7 +95,8 @@ function Chip({ label, className }: { label: string; className?: string }) {
 }
 
 function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : "Something went wrong";
+  // Show the reason, not the framework's "Action <name> failed:" prefix.
+  return err instanceof Error ? err.message.replace(/^Action "?[\w-]+"? failed:\s*/, "") : "Something went wrong";
 }
 
 export default function DeskRoute() {
@@ -134,6 +136,7 @@ export default function DeskRoute() {
         </header>
 
         <BudgetCard budget={budget.data} payments={all} />
+        <PolicyCard />
         <QueueCard payments={open} loading={payments.isLoading} />
         <ReceiptsCard receipts={receipts.data?.receipts ?? []} payments={all} loading={receipts.isLoading} />
       </div>
@@ -440,5 +443,163 @@ function ReceiptsCard({ receipts, payments, loading }: { receipts: Receipt[]; pa
         </DialogContent>
       </Dialog>
     </Card>
+  );
+}
+
+type PolicyResult = {
+  monthlyBudgetCapUsd: number;
+  autoApproveLimitUsd: number;
+  allowedPayees: string[];
+  updatedAt: string | null;
+  updatedBy: string;
+  limits: { minCapUsd: number; maxCapUsd: number; maxPayees: number };
+};
+
+function PolicyCard() {
+  const policy = useActionQuery<PolicyResult>("get-policy", {});
+  const [editing, setEditing] = useState(false);
+  const p = policy.data;
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <IconShieldCheck className="size-4 text-primary" strokeWidth={1.8} aria-hidden="true" />
+          Spend Policy
+        </CardTitle>
+        <Button variant="outline" size="sm" onClick={() => setEditing(true)} disabled={!p}>
+          <IconEdit className="size-4" strokeWidth={1.8} />
+          Edit
+        </Button>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {p ? (
+          <>
+            <dl className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-border px-3 py-2">
+                <dt className="text-xs text-muted-foreground">Monthly cap</dt>
+                <dd className="text-lg font-semibold tabular-nums" data-testid="policy-cap">{usd(p.monthlyBudgetCapUsd)}</dd>
+              </div>
+              <div className="rounded-lg border border-border px-3 py-2">
+                <dt className="text-xs text-muted-foreground">Auto-approve up to</dt>
+                <dd className="text-lg font-semibold tabular-nums" data-testid="policy-auto">{usd(p.autoApproveLimitUsd)}</dd>
+              </div>
+            </dl>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">Allowed payees ({p.allowedPayees.length})</span>
+              {p.allowedPayees.length ? (
+                <ul className="flex flex-wrap gap-1.5">
+                  {p.allowedPayees.map((e) => (
+                    <li key={e}>
+                      <Chip label={e} className="font-normal" />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">None. Every payout will be blocked.</p>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Only a person can change this policy; the agent can read it but not edit it. Reset demo restores the defaults.
+              {p.updatedAt ? ` Last changed by ${p.updatedBy}, ${when(p.updatedAt)}.` : ""}
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">Loading policy…</p>
+        )}
+      </CardContent>
+      {p ? <PolicyDialog policy={p} open={editing} onClose={() => setEditing(false)} /> : null}
+    </Card>
+  );
+}
+
+function PolicyDialog({ policy, open, onClose }: { policy: PolicyResult; open: boolean; onClose: () => void }) {
+  const initial = () => ({
+    cap: String(policy.monthlyBudgetCapUsd),
+    auto: String(policy.autoApproveLimitUsd),
+    payees: policy.allowedPayees.join("\n"),
+  });
+  const [draft, setDraft] = useState(initial);
+  const [error, setError] = useState<string | null>(null);
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open && !wasOpen) {
+    setWasOpen(true);
+    setDraft(initial());
+    setError(null);
+  } else if (!open && wasOpen) {
+    setWasOpen(false);
+  }
+  const save = useActionMutation("update-policy", {
+    uiOnly: true,
+    onSuccess: (res: { message: string }) => {
+      toast.success(res.message);
+      onClose();
+    },
+    onError: (err) => setError(errorMessage(err)),
+  });
+  const payees = draft.payees.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean);
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit spend policy</DialogTitle>
+          <DialogDescription>
+            Changes apply to the next payout attempt and update the queue right away. Reset demo restores the defaults.
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError(null);
+            save.mutate({
+              monthlyBudgetCapUsd: Number(draft.cap),
+              autoApproveLimitUsd: Number(draft.auto),
+              allowedPayees: payees,
+            });
+          }}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="policy-cap">Monthly cap (USD)</Label>
+              <Input id="policy-cap" inputMode="decimal" value={draft.cap} onChange={(e) => setDraft({ ...draft, cap: e.target.value })} />
+              <span className="text-xs text-muted-foreground">
+                {usd(policy.limits.minCapUsd)} to {usd(policy.limits.maxCapUsd)}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="policy-auto">Auto-approve up to (USD)</Label>
+              <Input id="policy-auto" inputMode="decimal" value={draft.auto} onChange={(e) => setDraft({ ...draft, auto: e.target.value })} />
+              <span className="text-xs text-muted-foreground">$0 to the cap</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="policy-payees">Allowed payees</Label>
+            <Textarea
+              id="policy-payees"
+              rows={4}
+              value={draft.payees}
+              onChange={(e) => setDraft({ ...draft, payees: e.target.value })}
+              aria-describedby="policy-payees-hint"
+            />
+            <span id="policy-payees-hint" className="text-xs text-muted-foreground">
+              One PayPal email per line, up to {policy.limits.maxPayees}. ({payees.length} entered)
+            </span>
+          </div>
+          {error ? (
+            <p role="alert" className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+              {error}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={save.isPending}>
+              {save.isPending ? "Saving…" : "Save policy"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

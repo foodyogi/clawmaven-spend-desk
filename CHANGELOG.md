@@ -2,6 +2,15 @@
 
 All notable user-facing changes to this app are documented here.
 
+## 0.1.7 — 2026-11-11
+
+### Added
+
+- Spend Policy card on the desk: the monthly cap, auto-approve limit and allowed payees are stored in Postgres (defaults from `policy.json`) and editable by a person. The approval gate, payouts and queue status chips use the live values immediately.
+- The policy is human-only. `update-policy` is hidden from the agent and from MCP and accepted only from the signed-in app UI, so the agent can never raise its own limits. The agent can read it with `get-policy`.
+- Validation: cap $1 to $1,000, auto-approve limit $0 to the cap, at most 10 valid payee emails. If the cap drops below what is already spent, remaining shows $0.
+- Reset demo also restores the default policy.
+
 ## 0.1.6 — 2026-11-07
 
 ### Changed

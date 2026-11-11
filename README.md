@@ -2,12 +2,16 @@
 
 An AI agent that pays a small team's contractors through **PayPal Payouts (sandbox)** once work is marked done, with guardrails:
 
-- Payouts up to **$25** run automatically.
+- Payouts up to the **auto-approve limit** (default $25) run automatically.
 - Larger payouts pause for a **human to edit and approve** (or reject).
-- Anything over the **remaining monthly budget ($200)** is blocked before it reaches PayPal.
+- Anything over the **remaining monthly budget** (default cap $200) or to a payee not on the allowed list is blocked before it reaches PayPal.
 - Every attempt writes a **receipt**.
 
 **Sandbox only. No real money moves.**
+
+### Human-only spend policy
+
+The cap, auto-approve limit and allowed payees live in Postgres (defaults from [`policy.json`](./policy.json)) and can be changed from the **Spend Policy** card. Only a person can change them: `update-policy` is hidden from the agent and from MCP, accepted only from the app UI, and rejects any other caller. The agent can read the policy with `get-policy` but can never raise its own limits. **Reset demo** restores the defaults.
 
 ## Run locally
 

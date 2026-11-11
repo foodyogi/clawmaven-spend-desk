@@ -7,6 +7,7 @@ import { sendPayout } from "../server/spend-desk/paypal.js";
 import { isAllowedPayee, loadPolicy, needsHumanApproval, toCents } from "../server/spend-desk/policy.js";
 import {
   type BudgetRow,
+  getActivePolicy,
   getBudgetRow,
   getPayment,
   insertReceipt,
@@ -43,11 +44,12 @@ function humanLabel(ctx?: ActionRunContext): string {
   return ctx?.userEmail ?? `human (${ctx?.caller ?? "unknown"})`;
 }
 
-const remaining = (b: BudgetRow) => b.capCents - b.spentCents;
+// Never negative: the cap can be lowered below what is already spent.
+const remaining = (b: BudgetRow) => Math.max(0, b.capCents - b.spentCents);
 
 export default defineAction({
   description:
-    "Execute (or reject) a proposed PayPal sandbox payout under the Spend Desk policy: <= $25 pays automatically, over $25 pauses for human approval, over the remaining monthly budget is blocked. Every outcome writes a receipt.",
+    "Execute (or reject) a proposed PayPal sandbox payout under the live Spend Desk policy (see get-policy): at or under the auto-approve limit pays automatically, above it pauses for human approval, over the remaining monthly budget or to a payee not on the allowed list is blocked. Every outcome writes a receipt.",
   schema,
   outputSchema: z.object({
     id: z.string(),
@@ -129,7 +131,7 @@ export default defineAction({
       return settle("rejected", "completed", { policyResult: "rejected", approver: humanLabel(ctx), detail: "Rejected by a human; nothing was sent to PayPal." }, budgetNow);
     }
 
-    if (!isAllowedPayee(policy, payment.payeeEmail)) {
+    if (!isAllowedPayee(await getActivePolicy(), payment.payeeEmail)) {
       return settle("blocked", "blocked", { policyResult: "blocked_payee_not_allowed", approver: "system-block", detail: `${payment.payeeEmail} is not in policy allowedPayees; nothing was sent to PayPal.` }, budgetNow);
     }
 

@@ -41,9 +41,50 @@ export function isValidUsdAmount(usd: number): boolean {
   return usd > 0 && Math.abs(usd * 100 - Math.round(usd * 100)) < 1e-6;
 }
 
-export function isAllowedPayee(policy: Policy, email: string): boolean {
+export function isAllowedPayee(policy: Pick<Policy, "allowedPayees">, email: string): boolean {
   const normalized = email.trim().toLowerCase();
   return policy.allowedPayees.some((p) => p.toLowerCase() === normalized);
+}
+
+/** Bounds update-policy enforces (USD). */
+export const POLICY_LIMITS = { minCapUsd: 1, maxCapUsd: 1000, maxPayees: 10 } as const;
+
+export interface PolicyInput {
+  monthlyBudgetCapUsd: number;
+  autoApproveLimitUsd: number;
+  allowedPayees: string[];
+}
+
+const EMAIL = z.string().email();
+
+/**
+ * Checks a proposed policy and returns it normalized (payees trimmed,
+ * lowercased, de-duplicated), or a list of human-readable problems.
+ */
+export function validatePolicyInput(input: PolicyInput): { ok: true; value: PolicyInput } | { ok: false; errors: string[] } {
+  const errors: string[] = [];
+  const { minCapUsd, maxCapUsd, maxPayees } = POLICY_LIMITS;
+  const cap = input.monthlyBudgetCapUsd;
+  const auto = input.autoApproveLimitUsd;
+  if (!Number.isFinite(cap) || cap < minCapUsd || cap > maxCapUsd || !isWholeCents(cap)) {
+    errors.push(`Monthly cap must be between $${minCapUsd} and $${maxCapUsd.toLocaleString("en-US")} (up to 2 decimals).`);
+  }
+  if (!Number.isFinite(auto) || auto < 0 || !isWholeCents(auto)) {
+    errors.push("Auto-approve limit must be $0 or more (up to 2 decimals).");
+  } else if (Number.isFinite(cap) && auto > cap) {
+    errors.push("Auto-approve limit cannot be higher than the monthly cap.");
+  }
+  const payees = [...new Set(input.allowedPayees.map((p) => p.trim().toLowerCase()).filter(Boolean))];
+  const bad = payees.filter((p) => !EMAIL.safeParse(p).success);
+  if (bad.length) errors.push(`Not a valid email: ${bad.join(", ")}.`);
+  if (payees.length > maxPayees) errors.push(`At most ${maxPayees} allowed payees.`);
+  return errors.length
+    ? { ok: false, errors }
+    : { ok: true, value: { monthlyBudgetCapUsd: cap, autoApproveLimitUsd: auto, allowedPayees: payees } };
+}
+
+function isWholeCents(usd: number): boolean {
+  return Math.abs(usd * 100 - Math.round(usd * 100)) < 1e-6;
 }
 
 /**

@@ -1,6 +1,6 @@
 import type { MigrationEntry } from "@agent-native/core/db";
 
-import { seedDemo } from "../spend-desk/seed.js";
+import { seedDemo, seedPolicy } from "../spend-desk/seed.js";
 
 export const SPEND_DESK_MIGRATIONS: MigrationEntry[] = [
   {
@@ -55,6 +55,26 @@ CREATE TABLE IF NOT EXISTS spend_budget (
     sql: {},
     run: async (exec) => {
       await seedDemo(exec);
+    },
+  },
+  {
+    version: 3,
+    name: "spend-policy-table",
+    sql: `CREATE TABLE IF NOT EXISTS spend_policy (
+  id TEXT PRIMARY KEY,
+  monthly_cap_cents INTEGER NOT NULL,
+  auto_approve_limit_cents INTEGER NOT NULL,
+  allowed_payees JSONB NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_by TEXT NOT NULL
+);`,
+  },
+  {
+    version: 4,
+    name: "spend-policy-seed",
+    sql: {},
+    run: async (exec) => {
+      await seedPolicy(exec);
     },
   },
 ];

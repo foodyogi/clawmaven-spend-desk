@@ -34,7 +34,7 @@ Before building common workspace or agent UI, read `agent-native-toolkit`; for s
 
 ## Spend Desk
 
-The Spend Desk page is `/desk` (view `desk`): Budget, Approval queue and Receipts ledger beside the agent chat. Policy lives in `policy.json`; `execute-payout` enforces it (≤ $25 auto-pays, above that needs human approval via `needsApproval`, over the remaining monthly budget is blocked before PayPal). PayPal Payouts is sandbox-only.
+The Spend Desk page is `/desk` (view `desk`): Budget, Approval queue and Receipts ledger beside the agent chat. The policy is stored in Postgres (defaults from `policy.json`) and `execute-payout` enforces the live values: at or under the auto-approve limit auto-pays, above it needs human approval via `needsApproval`, and over the remaining monthly budget is blocked before PayPal. PayPal Payouts is sandbox-only.
 
 | Action | Purpose |
 | --- | --- |
@@ -46,3 +46,7 @@ The Spend Desk page is `/desk` (view `desk`): Budget, Approval queue and Receipt
 | `get-budget` | Monthly cap, spent, remaining, auto-approve limit |
 | `list-receipts` | Receipts newest first, optionally by `paymentId` |
 | `reset-demo` | UI/CLI only (`agentTool: false`): clear payments, receipts and spend, restore seed tasks |
+| `get-policy` | Live spend policy: monthly cap, auto-approve limit, allowed payees (read-only) |
+| `update-policy` | **Human-only.** Change the policy from the Spend Policy card. `agentTool: false`, `uiOnly: true`, and `run()` rejects any caller but the frontend |
+
+**Governance rule:** the agent must never be able to raise its own limits. The active policy lives in the `spend_policy` table (seeded from `policy.json`; `reset-demo` restores it). Only a person can change it, through `update-policy` from the UI. The table is on the doctor `dbToolScopingDenylist`, so the agent's raw database tools cannot write it either. `execute-payout` and `list-payments` read the live policy on every call.

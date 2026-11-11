@@ -1,4 +1,4 @@
-import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 // Spend Desk keeps one shared demo ledger, so these tables have no owner
 // column (see doctor.dbToolScopingDenylist in agent-native.json). Money is
@@ -48,4 +48,15 @@ export const spendBudget = pgTable("spend_budget", {
   capCents: integer("cap_cents").notNull(),
   spentCents: integer("spent_cents").notNull(),
   autoApproveLimitCents: integer("auto_approve_limit_cents").notNull(),
+});
+
+// The active spend policy: one row (id "active"), seeded from policy.json.
+// update-policy writes it together with the month's budget row.
+export const spendPolicy = pgTable("spend_policy", {
+  id: text("id").primaryKey(),
+  monthlyCapCents: integer("monthly_cap_cents").notNull(),
+  autoApproveLimitCents: integer("auto_approve_limit_cents").notNull(),
+  allowedPayees: jsonb("allowed_payees").$type<string[]>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedBy: text("updated_by").notNull(),
 });

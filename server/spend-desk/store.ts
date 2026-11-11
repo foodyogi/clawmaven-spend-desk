@@ -1,8 +1,11 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
-import { getDb, schema } from "../db/index.js";
+import { getDbExec, sql as rawSql } from "@agent-native/core/db";
 
-const { spendBudget, spendPayments, spendReceipts, spendTasks } = schema;
+import { getDb, schema } from "../db/index.js";
+import { loadPolicy, toCents } from "./policy.js";
+
+const { spendBudget, spendPayments, spendPolicy, spendReceipts, spendTasks } = schema;
 
 export type TaskRow = typeof spendTasks.$inferSelect;
 export type PaymentRow = typeof spendPayments.$inferSelect;
@@ -105,4 +108,51 @@ export async function listPaymentRows(): Promise<(PaymentRow & { taskTitle: stri
     .leftJoin(spendTasks, eq(spendPayments.taskId, spendTasks.id))
     .orderBy(spendPayments.createdAt, spendPayments.id);
   return rows.map((r) => ({ ...r.payment, taskTitle: r.taskTitle }));
+}
+
+export interface ActivePolicy {
+  monthlyCapCents: number;
+  autoApproveLimitCents: number;
+  allowedPayees: string[];
+  updatedAt: Date | null;
+  updatedBy: string;
+}
+
+/** The live spend policy from Postgres; policy.json defaults if the row is missing. */
+export async function getActivePolicy(): Promise<ActivePolicy> {
+  const [row] = await getDb().select().from(spendPolicy).where(eq(spendPolicy.id, "active"));
+  if (row) return row;
+  const file = loadPolicy();
+  return {
+    monthlyCapCents: toCents(file.monthlyBudgetCapUsd),
+    autoApproveLimitCents: toCents(file.autoApproveLimitUsd),
+    allowedPayees: file.allowedPayees,
+    updatedAt: null,
+    updatedBy: "policy.json",
+  };
+}
+
+/**
+ * Saves the policy and the month's budget cap and auto limit in one statement,
+ * so the two can never disagree. Returns false if the policy row is missing.
+ */
+export async function savePolicy(month: string, policy: { monthlyCapCents: number; autoApproveLimitCents: number; allowedPayees: string[] }, updatedBy: string): Promise<boolean> {
+  const { rows } = await getDbExec().execute(rawSql`WITH p AS (
+      UPDATE spend_policy
+      SET monthly_cap_cents = ${rawSql.value(policy.monthlyCapCents)},
+          auto_approve_limit_cents = ${rawSql.value(policy.autoApproveLimitCents)},
+          allowed_payees = ${rawSql.value(JSON.stringify(policy.allowedPayees))}::jsonb,
+          updated_at = now(),
+          updated_by = ${rawSql.value(updatedBy)}
+      WHERE id = 'active'
+      RETURNING id
+    ), b AS (
+      UPDATE spend_budget
+      SET cap_cents = ${rawSql.value(policy.monthlyCapCents)},
+          auto_approve_limit_cents = ${rawSql.value(policy.autoApproveLimitCents)}
+      WHERE month = ${rawSql.value(month)}
+      RETURNING month
+    )
+    SELECT (SELECT count(*) FROM p) AS policies, (SELECT count(*) FROM b) AS budgets`);
+  return Number(rows[0]?.policies ?? 0) === 1;
 }

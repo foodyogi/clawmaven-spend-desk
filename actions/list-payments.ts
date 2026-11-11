@@ -2,7 +2,7 @@ import { defineAction } from "@agent-native/core/action";
 import { z } from "zod";
 
 import { isAllowedPayee, loadPolicy, paymentOutlook } from "../server/spend-desk/policy.js";
-import { getBudgetRow, listPaymentRows, OPEN_PAYMENT_STATUSES } from "../server/spend-desk/store.js";
+import { getActivePolicy, getBudgetRow, listPaymentRows, OPEN_PAYMENT_STATUSES } from "../server/spend-desk/store.js";
 import { paymentOut, toPayment } from "../server/spend-desk/types.js";
 
 export default defineAction({
@@ -25,8 +25,8 @@ export default defineAction({
   http: { method: "GET" },
   run: async ({ status }) => {
     const policy = loadPolicy();
-    const [rows, budget] = await Promise.all([listPaymentRows(), getBudgetRow(policy.demoMonth)]);
-    const remainingCents = budget ? budget.capCents - budget.spentCents : 0;
+    const [rows, budget, active] = await Promise.all([listPaymentRows(), getBudgetRow(policy.demoMonth), getActivePolicy()]);
+    const remainingCents = budget ? Math.max(0, budget.capCents - budget.spentCents) : 0;
     const payments = rows
       .filter((r) => status === "all" || OPEN_PAYMENT_STATUSES.includes(r.status))
       .map((r) => ({
@@ -38,7 +38,7 @@ export default defineAction({
                 amountCents: r.amountCents,
                 remainingCents,
                 autoApproveLimitCents: budget.autoApproveLimitCents,
-                payeeAllowed: isAllowedPayee(policy, r.payeeEmail),
+                payeeAllowed: isAllowedPayee(active, r.payeeEmail),
               })
             : null,
       }));

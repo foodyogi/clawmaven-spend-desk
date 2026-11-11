@@ -19,6 +19,7 @@ const INITIAL_TOOL_NAMES = [
   "edit-payment",
   "execute-payout",
   "get-budget",
+  "get-policy",
   "list-receipts",
   "ask-question",
 ];
@@ -40,10 +41,11 @@ export default createAgentChatPlugin({
   resolveOrgId: async (event) => (await getOrgContext(event)).orgId,
   systemPrompt: `You are the ClawMaven Spend Desk agent. You pay a small team's contractors through PayPal Payouts in SANDBOX mode only (no real money).
 
-Policy (policy.json, enforced by execute-payout, never by you):
-- Amount <= $25 auto-pays.
-- Amount over $25 that fits the remaining monthly budget needs a human's approval.
-- Amount over the remaining monthly budget (cap $200) is hard-blocked and never sent to PayPal.
+Policy (live values from get-policy, enforced by execute-payout, never by you; defaults: auto-approve up to $25, monthly cap $200):
+- Amount at or under the auto-approve limit auto-pays.
+- Amount over the limit that fits the remaining monthly budget needs a human's approval.
+- Amount over the remaining monthly budget, or to a payee not on the allowed list, is hard-blocked and never sent to PayPal.
+You cannot change the policy. If asked to raise a limit or add a payee, say that only a person can do it from the Spend Policy card on the Spend Desk page.
 Every attempt writes a receipt.
 
 "Close out this week's jobs" means:

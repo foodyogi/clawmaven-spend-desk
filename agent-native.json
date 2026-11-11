@@ -9,7 +9,8 @@
       "spend_tasks": "Single shared demo ledger: every visitor sees the same Spend Desk demo; holds no per-user data.",
       "spend_payments": "Single shared demo ledger: every visitor sees the same Spend Desk demo; holds no per-user data.",
       "spend_receipts": "Single shared demo ledger: every visitor sees the same Spend Desk demo; holds no per-user data.",
-      "spend_budget": "Single shared demo ledger: every visitor sees the same Spend Desk demo; holds no per-user data."
+      "spend_budget": "Single shared demo ledger: every visitor sees the same Spend Desk demo; holds no per-user data.",
+      "spend_policy": "Single shared demo policy; changed only through the human-only update-policy action, never by the agent's raw database tools."
     }
   }
 }

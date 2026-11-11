@@ -35,8 +35,10 @@ const budget = () => getBudget.run({}, human);
 
 beforeAll(async () => {
   const exec = getDbExec();
-  const tables = SPEND_DESK_MIGRATIONS[0]!.sql as string;
-  for (const statement of tables.split(/;\s*\n/).filter((s) => s.trim())) await exec.execute(statement);
+  for (const m of SPEND_DESK_MIGRATIONS) {
+    if (typeof m.sql !== "string") continue;
+    for (const statement of m.sql.split(/;\s*\n/).filter((s) => s.trim())) await exec.execute(statement);
+  }
 });
 
 beforeEach(async () => {
