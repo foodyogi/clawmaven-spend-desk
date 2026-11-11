@@ -2,6 +2,12 @@
 
 All notable user-facing changes to this app are documented here.
 
+## 0.1.8 — 2026-11-11
+
+### Docs
+
+- README: live app and demo video links, a step-by-step guide for judges, how PayPal Payouts and Anthropic Claude are used, the governance rule, and what came from the template versus what is new. No app changes.
+
 ## 0.1.7 — 2026-11-11
 
 ### Added

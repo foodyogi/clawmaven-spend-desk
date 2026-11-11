@@ -9,7 +9,7 @@ export const APP_NAME =
 
 export const APP_TITLE =
   rawAppTitle === APP_TITLE_PLACEHOLDER ? "Chat" : rawAppTitle;
-export const APP_VERSION = "0.1.7";
+export const APP_VERSION = "0.1.8";
 
 export const APP_DESCRIPTION =
   "An AI agent pays contractors through PayPal Payouts (sandbox): small payouts run automatically, larger ones wait for human approval, and anything over the monthly budget is blocked. Every attempt writes a receipt.";
