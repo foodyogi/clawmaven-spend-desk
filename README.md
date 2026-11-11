@@ -92,11 +92,11 @@ The repo was started on Nov 7, 2026 with the Agent-Native create command (`--sta
 
 ## NEAR work in progress (branch `near`)
 
-This branch is adding a **NEAR testnet payout rail** for the [NEAR HACKATHON](https://nearhackathon.com). It is work in progress: no contract code or NEAR transactions yet.
+This branch is adding a **NEAR testnet payout rail** for the [NEAR HACKATHON](https://nearhackathon.com). It is work in progress. So far: a Rust treasury contract with Sandbox tests and a testnet smoke script (`pnpm near:smoke`). The app does not use the NEAR rail yet.
 
 - **Baseline (not for NEAR judging):** everything up to tag [`paypal-hackathon-submission`](https://github.com/foodyogi/clawmaven-spend-desk/tree/paypal-hackathon-submission) (`c6f747c`, v0.1.8): the Agent-Native app, the PayPal Payouts sandbox rail, the human-only spend policy, and the screens described above. That version is the PayPal AI Hackathon submission, and `main` and the live site still run it.
 - **New NEAR work:** only the commits on [`near`](https://github.com/foodyogi/clawmaven-spend-desk/tree/near) after that tag. See the diff: [paypal-hackathon-submission...near](https://github.com/foodyogi/clawmaven-spend-desk/compare/paypal-hackathon-submission...near).
-- **Planned:** a Rust treasury contract ([`contracts/spend-desk-treasury/`](./contracts/spend-desk-treasury/)) that holds testnet NEAR and enforces caps, an allowlist, a pause switch and an audit log on chain. The agent will sign only with a function-call access key scoped to that contract. The stored spend policy gets a `payoutRail` (`paypal` or `near`), allowed NEAR payees and a fixed demo-only USD-to-NEAR rate, still changeable only by a person.
+- **Treasury contract:** [`contracts/spend-desk-treasury/`](./contracts/spend-desk-treasury/) (Rust, near-sdk) holds testnet NEAR and pays from its own balance. So far it enforces the agent-only caller, the payee allowlist, a per-payout cap and one-time idempotency keys, rolling back a failed transfer. Next: pause switch, total budget cap and audit log. The agent will sign only with a function-call access key scoped to that contract. The stored spend policy gets a `payoutRail` (`paypal` or `near`), allowed NEAR payees and a fixed demo-only USD-to-NEAR rate, still changeable only by a person.
 - **Testnet only. No real funds.**
 
 ## Run locally

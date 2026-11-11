@@ -2,6 +2,15 @@
 
 All notable user-facing changes to this app are documented here.
 
+## 0.1.10 — 2026-11-12
+
+### Added (branch `near`, testnet only)
+
+- Treasury contract (`contracts/spend-desk-treasury/`, Rust and near-sdk): agent-only, zero-deposit `payout` from the contract balance, a payee allowlist, a per-payout cap, one-time idempotency keys, spent tracking and view methods. A failed transfer rolls back the spend and releases its key. Unit tests and local Sandbox tests.
+- `pnpm near:smoke`: one 0.01 testnet NEAR payout signed only with the agent's function-call key, then a retry with the same idempotency key to show it is not paid twice. Refuses to run unless `NEAR_NETWORK=testnet` and the key is a function-call key scoped to the treasury's `payout`.
+- `pnpm near:set-agent-key`: copies that function-call key from NEAR CLI's legacy key store into `.env` without printing it, after checking its scope on chain.
+- `near-api-js` 7.5.3.
+
 ## 0.1.9 — 2026-11-12
 
 ### Changed

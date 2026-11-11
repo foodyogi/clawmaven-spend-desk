@@ -1,12 +1,22 @@
-# Spend Desk treasury contract (NEAR testnet) — placeholder
+# Spend Desk treasury contract (NEAR testnet)
 
-Work in progress on the `near` branch. No contract code yet.
+Rust / near-sdk contract that holds the Spend Desk demo funds and pays contractors from its own balance. The Spend Desk agent calls `payout` with a **function-call access key** scoped to this contract and method, which cannot move NEAR on its own.
 
-Planned, per the NEAR build brief (Rust, near-sdk-rs, testnet only):
+## Methods
 
-- The contract holds the demo testnet NEAR and pays contractors from its own balance with a zero-deposit `payout` method.
-- The Spend Desk agent signs only with a **function-call access key** scoped to this contract and the payout method, with a finite gas allowance. That key cannot transfer NEAR or add keys itself.
-- Enforced on chain: owner-only pause (kill switch), per-payout cap, total budget cap, allowed payees, idempotency key (a retry can't pay twice), and an audit log, all readable through view methods.
-- Sandbox tests with `cargo test`; build with `cargo near build non-reproducible-wasm`.
+| Method | Who | What |
+| --- | --- | --- |
+| `new(owner, agent, allowed_payees, per_payout_cap_yocto)` | the treasury account, once, at deploy (`#[private]`) | Sets the owner, the only agent account allowed to request payouts, the payee allowlist and a temporary per-payout cap. |
+| `payout(payee, amount_yocto, memo, idempotency_key)` | the agent account only, **zero deposit** | Refuses an unknown caller, a payee not on the allowlist, an amount over the cap, or an idempotency key already used. Otherwise records the spend and transfers from the contract balance. If the transfer fails, a callback rolls back the spend and releases the key. |
+| `get_spent`, `get_per_payout_cap`, `is_allowed_payee`, `is_key_used`, `get_config` | anyone (view) | Totals, limits and allowlist. |
 
-The owner's full-access key never goes into the app's `.env` or Netlify. Owner actions (deploy, fund, pause, revoke the agent key) are signed with NEAR CLI from the owner's local key store.
+Step C (testnet smoke) scope. Pause, a total budget cap, owner admin methods and an on-chain audit log come next.
+
+## Build and test
+
+```bash
+cargo test                              # unit tests + local NEAR Sandbox tests (no testnet account needed)
+cargo near build non-reproducible-wasm  # writes target/near/spend_desk_treasury.wasm
+```
+
+Testnet only. No real funds.
