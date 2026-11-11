@@ -90,6 +90,15 @@ The repo was started on Nov 7, 2026 with the Agent-Native create command (`--sta
 | Nov 7 | `32bccb0` | ClawMaven branding, brand colour and page titles. |
 | Nov 11 | `f551ee1` | Editable, human-only Spend Policy (`get-policy`, `update-policy`, Spend Policy card). |
 
+## NEAR work in progress (branch `near`)
+
+This branch is adding a **NEAR testnet payout rail** for the [NEAR HACKATHON](https://nearhackathon.com). It is work in progress: no contract code or NEAR transactions yet.
+
+- **Baseline (not for NEAR judging):** everything up to tag [`paypal-hackathon-submission`](https://github.com/foodyogi/clawmaven-spend-desk/tree/paypal-hackathon-submission) (`c6f747c`, v0.1.8): the Agent-Native app, the PayPal Payouts sandbox rail, the human-only spend policy, and the screens described above. That version is the PayPal AI Hackathon submission, and `main` and the live site still run it.
+- **New NEAR work:** only the commits on [`near`](https://github.com/foodyogi/clawmaven-spend-desk/tree/near) after that tag. See the diff: [paypal-hackathon-submission...near](https://github.com/foodyogi/clawmaven-spend-desk/compare/paypal-hackathon-submission...near).
+- **Planned:** a Rust treasury contract ([`contracts/spend-desk-treasury/`](./contracts/spend-desk-treasury/)) that holds testnet NEAR and enforces caps, an allowlist, a pause switch and an audit log on chain. The agent will sign only with a function-call access key scoped to that contract. The stored spend policy gets a `payoutRail` (`paypal` or `near`), allowed NEAR payees and a fixed demo-only USD-to-NEAR rate, still changeable only by a person.
+- **Testnet only. No real funds.**
+
 ## Run locally
 
 Requires Node.js 22.22+ and pnpm.

@@ -2,6 +2,12 @@
 
 All notable user-facing changes to this app are documented here.
 
+## 0.1.9 — 2026-11-12
+
+### Changed
+
+- Branch `near`: workspace for a NEAR testnet payout rail. Adds a placeholder `contracts/spend-desk-treasury/`, `NEAR_*` variable names in `.env.example`, and a README section separating the baseline (tag `paypal-hackathon-submission`) from new NEAR work. No app behavior changes.
+
 ## 0.1.8 — 2026-11-11
 
 ### Docs
