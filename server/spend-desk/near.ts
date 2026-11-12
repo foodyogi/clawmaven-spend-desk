@@ -53,6 +53,23 @@ export function nearContractId(): string | null {
 
 let verifiedPublicKey: string | null = null;
 
+/**
+ * Plain-language reason for a transaction the network would not accept, so a
+ * kill switch shows up clearly on the receipt. Fails closed either way.
+ */
+export function describeNearSendError(message: string): string {
+  if (/NotEnoughAllowance|allowance/i.test(message)) {
+    return "the agent's NEAR key has used up its gas allowance; the owner must add a new function-call key";
+  }
+  if (/AccessKeyNotFound|AccessKeyDoesNotExist|UNKNOWN_ACCESS_KEY|access key.*(does not exist|doesn't exist|not found)|InvalidAccessKey/i.test(message)) {
+    return "the agent's NEAR key was rejected (revoked or replaced); the owner must add a new function-call key";
+  }
+  if (/MethodNameMismatch|ReceiverMismatch/i.test(message)) {
+    return "the agent's NEAR key is not allowed to make this call";
+  }
+  return message;
+}
+
 /** Refuses to sign with anything but a function-call key scoped to the treasury's payout. */
 async function assertScopedKey(account: Account, agentKey: KeyPairString, contractId: string) {
   const publicKey = KeyPair.fromString(agentKey).getPublicKey().toString();
@@ -60,7 +77,7 @@ async function assertScopedKey(account: Account, agentKey: KeyPairString, contra
   const key = (await account.getAccessKey(publicKey).catch(() => null)) as {
     permission: "FullAccess" | { FunctionCall: { receiver_id: string; method_names: string[] } };
   } | null;
-  if (!key) throw new NearError("NEAR_AGENT_PRIVATE_KEY is not an access key of the agent account (revoked?).");
+  if (!key) throw new NearError("The agent's NEAR key was rejected (revoked or replaced); the owner must add a new function-call key. Nothing was sent.");
   if (key.permission === "FullAccess") throw new NearError("NEAR_AGENT_PRIVATE_KEY is a full-access key; the app only signs with the scoped function-call key.");
   const fc = key.permission.FunctionCall;
   if (fc.receiver_id !== contractId || fc.method_names.length !== 1 || fc.method_names[0] !== "payout") {
@@ -101,7 +118,10 @@ export async function sendNearPayout(input: {
       throwOnFailure: false,
     })
     .catch((err: unknown) => {
-      throw new NearError(`NEAR transaction was not sent: ${err instanceof Error ? err.message : String(err)}`.slice(0, 500));
+      // Re-check the key on the next attempt: it may have been revoked or replaced.
+      verifiedPublicKey = null;
+      const reason = describeNearSendError(err instanceof Error ? err.message : String(err));
+      throw new NearError(`NEAR transaction was not accepted, so nothing was sent: ${reason}`.slice(0, 500));
     });
 
   const txHash = res.transaction_outcome.id;
@@ -113,5 +133,6 @@ export async function sendNearPayout(input: {
     const value = Buffer.from(status.SuccessValue ?? "", "base64").toString();
     return { txHash, outcome: value === "true" ? "paid" : "refused", onChainOutcome };
   }
+  verifiedPublicKey = null;
   throw new NearError(`NEAR transaction ${txHash} failed: ${JSON.stringify(status?.Failure ?? status).slice(0, 300)}`, txHash);
 }

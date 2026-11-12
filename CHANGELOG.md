@@ -2,6 +2,15 @@
 
 All notable user-facing changes to this app are documented here.
 
+## 0.1.13 — 2026-11-12
+
+### Added (branch `near`, testnet only)
+
+- Kill switch tooling: `pnpm near:pause`, `pnpm near:unpause` and `pnpm near:revoke` print (never run) the owner and agent CLI commands. Revoke includes adding a fresh payout-only key and reloading it.
+- Fail-closed handling: a paused treasury gives `blocked_on_chain` (`RefusedPaused`). A revoked key or an exhausted gas allowance gives `near_error` with a plain explanation. Every case releases the budget, and the key check is repeated after any failure. Covered by new tests.
+- `docs/near-kill-switch-demo.md`: the recording script, with expected output.
+- README: NEAR HACKATHON section for judges and AI screeners (problem, design, do-X-see-Y steps, baseline vs new work, key limits, versions, accounts and testnet transaction hashes).
+
 ## 0.1.12 — 2026-11-12
 
 ### Added (branch `near`, testnet only)
