@@ -2,7 +2,7 @@
   "name": "clawmaven-spend-desk",
   "displayName": "ClawMaven Spend Desk",
   "private": true,
-  "version": "0.1.11",
+  "version": "0.1.12",
   "license": "MIT",
   "author": "Paul Rodney Turner",
   "description": "AI agent that pays contractors via PayPal Payouts (sandbox) with budget caps, approval gates and receipts.",

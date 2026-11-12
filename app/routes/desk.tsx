@@ -36,13 +36,17 @@ export function meta() {
   return pageMeta("Spend Desk");
 }
 
+type Rail = "paypal" | "near";
 type PaymentsResult = {
+  rail: Rail;
   payments: {
     id: string;
     taskId: string;
     taskTitle: string | null;
     amountUsd: number;
     payeeEmail: string;
+    payeeNearAccount: string | null;
+    nearTxHash: string | null;
     memo: string;
     status: string;
     outlook: Outlook | null;
@@ -61,10 +65,19 @@ type Receipt = {
   approver: string;
   paypalBatchId: string | null;
   paypalItemId: string | null;
+  payeeNearAccount: string | null;
+  nearTxHash: string | null;
   budgetRemainingAfterUsd: number;
   detail: string;
   createdAt: string;
 };
+
+const nearTxUrl = (hash: string) => `https://testnet.nearblocks.io/txns/${hash}`;
+const nearAccountUrl = (id: string) => `https://testnet.nearblocks.io/address/${id}`;
+const RAIL_LABEL: Record<Rail, string> = { paypal: "PayPal sandbox", near: "NEAR testnet" };
+/** The payee the live rail pays. */
+const payeeFor = (p: { payeeEmail: string; payeeNearAccount: string | null }, rail: Rail) =>
+  rail === "near" ? (p.payeeNearAccount ?? "(no NEAR payee)") : p.payeeEmail;
 
 const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 const when = (iso: string) =>
@@ -84,6 +97,8 @@ const RESULT: Record<string, { label: string; className: string }> = {
   blocked_payee_not_allowed: { label: "blocked_payee_not_allowed", className: "border-orange-500/40 bg-orange-500/10 text-orange-700 dark:text-orange-300" },
   rejected: { label: "rejected", className: "border-zinc-500/40 bg-zinc-500/10 text-zinc-700 dark:text-zinc-300" },
   paypal_error: { label: "paypal_error", className: "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300" },
+  blocked_on_chain: { label: "blocked_on_chain", className: "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300" },
+  near_error: { label: "near_error", className: "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300" },
 };
 
 function Chip({ label, className }: { label: string; className?: string }) {
@@ -119,6 +134,9 @@ export default function DeskRoute() {
 
   const all = payments.data?.payments ?? [];
   const open = all.filter((p) => p.outlook !== null);
+  const policy = useActionQuery<PolicyResult>("get-policy", {});
+  const rail: Rail = payments.data?.rail ?? policy.data?.payoutRail ?? "paypal";
+  const contractId = policy.data?.nearContractId ?? null;
 
   return (
     <div className="h-full overflow-y-auto">
@@ -127,17 +145,39 @@ export default function DeskRoute() {
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-semibold tracking-tight">{APP_TITLE}</h1>
             <Chip label={`v${APP_VERSION}`} className="text-muted-foreground" />
-            <Chip label="PayPal sandbox · no real money" className="border-sky-500/40 text-sky-700 dark:text-sky-300" />
+            <Chip label={`${RAIL_LABEL[rail]} · no real money`} className="border-sky-500/40 text-sky-700 dark:text-sky-300" />
           </div>
           <p className="text-sm text-muted-foreground">
             Policy: payouts up to {usd(budget.data?.autoApproveLimitUsd ?? 25)} pay automatically, anything above needs a human's approval, and
-            anything over the remaining monthly budget is blocked before it reaches PayPal.
+            anything over the remaining monthly budget is blocked before it reaches {rail === "near" ? "the NEAR treasury" : "PayPal"}.
           </p>
+          <div
+            className="mt-1 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm"
+            data-testid="rail-banner"
+          >
+            <span className="font-medium">Payout rail: {RAIL_LABEL[rail]}</span>
+            {rail === "near" ? (
+              <span className="text-muted-foreground">
+                Paid from treasury contract{" "}
+                {contractId ? (
+                  <a className="font-mono text-foreground underline underline-offset-2" href={nearAccountUrl(contractId)} target="_blank" rel="noreferrer">
+                    {contractId}
+                  </a>
+                ) : (
+                  "(not configured)"
+                )}{" "}
+                with a payout-only agent key. Demo rate {policy.data ? `$1 = ${policy.data.demoUsdToNear} testnet NEAR` : ""} (demo-only, not a market rate).
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Payouts go through PayPal Payouts in the sandbox.</span>
+            )}
+            <span className="text-xs text-muted-foreground">Only a person can switch rails, in the Spend Policy card.</span>
+          </div>
         </header>
 
         <BudgetCard budget={budget.data} payments={all} />
         <PolicyCard />
-        <QueueCard payments={open} loading={payments.isLoading} />
+        <QueueCard payments={open} loading={payments.isLoading} rail={rail} />
         <ReceiptsCard receipts={receipts.data?.receipts ?? []} payments={all} loading={receipts.isLoading} />
       </div>
 
@@ -208,14 +248,14 @@ function BudgetCard({ budget, payments }: { budget: Budget | undefined; payments
   );
 }
 
-function QueueCard({ payments, loading }: { payments: Payment[]; loading: boolean }) {
+function QueueCard({ payments, loading, rail }: { payments: Payment[]; loading: boolean; rail: Rail }) {
   const [editing, setEditing] = useState<Payment | null>(null);
   const [deciding, setDeciding] = useState<{ payment: Payment; decision: "approve" | "reject" } | null>(null);
   const execute = useActionMutation("execute-payout", {
     timeoutMs: 120_000,
     onSuccess: (res: { receipt: Receipt }) => {
       const r = res.receipt;
-      const msg = `${r.policyResult}: ${usd(r.amountUsd)} to ${r.payeeEmail}`;
+      const msg = `${r.policyResult}: ${usd(r.amountUsd)} to ${r.payeeNearAccount ?? r.payeeEmail}`;
       if (r.policyResult === "auto_paid" || r.policyResult === "approved_and_paid") toast.success(msg);
       else toast.message(msg);
     },
@@ -243,8 +283,8 @@ function QueueCard({ payments, loading }: { payments: Payment[]; loading: boolea
                     <span className="font-semibold tabular-nums">{usd(p.amountUsd)}</span>
                     {p.outlook ? <Chip {...OUTLOOK[p.outlook]} /> : null}
                   </div>
-                  <p className="truncate text-xs text-muted-foreground" title={p.payeeEmail}>
-                    {p.payeeEmail} · {p.memo}
+                  <p className="truncate text-xs text-muted-foreground" title={payeeFor(p, rail)}>
+                    {payeeFor(p, rail)} · {p.memo}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
@@ -274,15 +314,17 @@ function QueueCard({ payments, loading }: { payments: Payment[]; loading: boolea
               <AlertDialogHeader>
                 <AlertDialogTitle>
                   {deciding.decision === "approve"
-                    ? `Approve ${usd(deciding.payment.amountUsd)} to ${deciding.payment.payeeEmail}?`
+                    ? `Approve ${usd(deciding.payment.amountUsd)} to ${payeeFor(deciding.payment, rail)}?`
                     : `Reject ${usd(deciding.payment.amountUsd)} for ${deciding.payment.taskTitle}?`}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   {deciding.decision === "reject"
-                    ? "Nothing is sent to PayPal. A rejected receipt is written and the task can be proposed again."
+                    ? `Nothing is sent to ${rail === "near" ? "the NEAR treasury" : "PayPal"}. A rejected receipt is written and the task can be proposed again.`
                     : deciding.payment.outlook === "blocked_over_budget" || deciding.payment.outlook === "blocked_payee_not_allowed"
-                      ? "Policy will block this payout before it reaches PayPal and write a blocked receipt."
-                      : "This sends a PayPal sandbox payout (no real money) and writes a receipt. The budget is re-checked at execution time."}
+                      ? `Policy will block this payout before it reaches ${rail === "near" ? "the NEAR treasury" : "PayPal"} and write a blocked receipt.`
+                      : rail === "near"
+                        ? "The NEAR testnet treasury contract pays this from its own balance (no real money) and writes a receipt. The budget is re-checked here and on chain."
+                        : "This sends a PayPal sandbox payout (no real money) and writes a receipt. The budget is re-checked at execution time."}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -293,6 +335,8 @@ function QueueCard({ payments, loading }: { payments: Payment[]; loading: boolea
                       paymentId: deciding.payment.id,
                       amountUsd: deciding.payment.amountUsd,
                       payeeEmail: deciding.payment.payeeEmail,
+                      rail,
+                      ...(rail === "near" && deciding.payment.payeeNearAccount ? { payeeNearAccount: deciding.payment.payeeNearAccount } : {}),
                       decision: deciding.decision,
                     })
                   }
@@ -309,11 +353,11 @@ function QueueCard({ payments, loading }: { payments: Payment[]; loading: boolea
 }
 
 function EditDialog({ payment, onClose }: { payment: Payment | null; onClose: () => void }) {
-  const [draft, setDraft] = useState({ amount: "", payee: "", memo: "" });
+  const [draft, setDraft] = useState({ amount: "", payee: "", nearPayee: "", memo: "" });
   const [forId, setForId] = useState<string | null>(null);
   if (payment && forId !== payment.id) {
     setForId(payment.id);
-    setDraft({ amount: String(payment.amountUsd), payee: payment.payeeEmail, memo: payment.memo });
+    setDraft({ amount: String(payment.amountUsd), payee: payment.payeeEmail, nearPayee: payment.payeeNearAccount ?? "", memo: payment.memo });
   }
   const edit = useActionMutation("edit-payment", {
     onSuccess: () => {
@@ -338,7 +382,13 @@ function EditDialog({ payment, onClose }: { payment: Payment | null; onClose: ()
           onSubmit={(e) => {
             e.preventDefault();
             if (!payment || !valid) return;
-            edit.mutate({ paymentId: payment.id, amountUsd: amount, payeeEmail: draft.payee.trim(), memo: draft.memo });
+            edit.mutate({
+              paymentId: payment.id,
+              amountUsd: amount,
+              payeeEmail: draft.payee.trim(),
+              ...(draft.nearPayee.trim() ? { payeeNearAccount: draft.nearPayee.trim() } : {}),
+              memo: draft.memo,
+            });
           }}
         >
           <div className="flex flex-col gap-1.5">
@@ -348,6 +398,10 @@ function EditDialog({ payment, onClose }: { payment: Payment | null; onClose: ()
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-payee">Payee PayPal email</Label>
             <Input id="edit-payee" type="email" value={draft.payee} onChange={(e) => setDraft({ ...draft, payee: e.target.value })} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="edit-near-payee">Payee NEAR testnet account</Label>
+            <Input id="edit-near-payee" value={draft.nearPayee} placeholder="name.testnet" onChange={(e) => setDraft({ ...draft, nearPayee: e.target.value })} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-memo">Memo</Label>
@@ -393,12 +447,33 @@ function ReceiptsCard({ receipts, payments, loading }: { receipts: Receipt[]; pa
                     <Chip {...(RESULT[r.policyResult] ?? { label: r.policyResult })} />
                   </span>
                   <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                    <span className="max-w-full truncate">{r.payeeEmail}</span>
+                    <span className="max-w-full truncate">{r.payeeNearAccount ?? r.payeeEmail}</span>
                     <span>
                       Approver <span className="text-foreground">{r.approver}</span>
                     </span>
                     <span>
-                      PayPal batch <span className="font-mono text-foreground">{r.paypalBatchId ?? "— (not sent)"}</span>
+                      {r.payeeNearAccount ? (
+                        <>
+                          NEAR tx{" "}
+                          {r.nearTxHash ? (
+                            <a
+                              className="font-mono text-foreground underline underline-offset-2"
+                              href={nearTxUrl(r.nearTxHash)}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {r.nearTxHash.slice(0, 10)}…
+                            </a>
+                          ) : (
+                            <span className="font-mono text-foreground">— (not sent)</span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          PayPal batch <span className="font-mono text-foreground">{r.paypalBatchId ?? "— (not sent)"}</span>
+                        </>
+                      )}
                     </span>
                     <span className="tabular-nums">{when(r.createdAt)}</span>
                   </span>
@@ -423,9 +498,23 @@ function ReceiptsCard({ receipts, payments, loading }: { receipts: Receipt[]; pa
                     ["Policy result", <Chip key="c" {...(RESULT[selected.policyResult] ?? { label: selected.policyResult })} />],
                     ["Approver", selected.approver],
                     ["Amount", usd(selected.amountUsd)],
-                    ["Payee", selected.payeeEmail],
-                    ["PayPal batch id", selected.paypalBatchId ?? "— (not sent to PayPal)"],
-                    ["PayPal item id", selected.paypalItemId ?? "—"],
+                    ["Rail", selected.payeeNearAccount ? "NEAR testnet" : "PayPal sandbox"],
+                    ["Payee", selected.payeeNearAccount ?? selected.payeeEmail],
+                    ...(selected.payeeNearAccount
+                      ? ([
+                          [
+                            "NEAR transaction",
+                            selected.nearTxHash ? (
+                              <a key="tx" className="underline underline-offset-2" href={nearTxUrl(selected.nearTxHash)} target="_blank" rel="noreferrer">
+                                {selected.nearTxHash}
+                              </a>
+                            ) : (
+                              "— (not sent to NEAR)"
+                            ),
+                          ],
+                        ] as const)
+                      : ([["PayPal batch id", selected.paypalBatchId ?? "— (not sent to PayPal)"]] as const)),
+                    ...(selected.payeeNearAccount ? [] : ([["PayPal item id", selected.paypalItemId ?? "—"]] as const)),
                     ["Budget remaining after", usd(selected.budgetRemainingAfterUsd)],
                     ["Payment id", selected.paymentId],
                     ["Receipt id", selected.id],
@@ -450,9 +539,13 @@ type PolicyResult = {
   monthlyBudgetCapUsd: number;
   autoApproveLimitUsd: number;
   allowedPayees: string[];
+  payoutRail: Rail;
+  allowedNearPayees: string[];
+  demoUsdToNear: number;
+  nearContractId: string | null;
   updatedAt: string | null;
   updatedBy: string;
-  limits: { minCapUsd: number; maxCapUsd: number; maxPayees: number };
+  limits: { minCapUsd: number; maxCapUsd: number; maxPayees: number; minUsdToNear: number; maxUsdToNear: number };
 };
 
 function PolicyCard() {
@@ -484,8 +577,29 @@ function PolicyCard() {
                 <dd className="text-lg font-semibold tabular-nums" data-testid="policy-auto">{usd(p.autoApproveLimitUsd)}</dd>
               </div>
             </dl>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-xs text-muted-foreground">Payout rail</span>
+              <Chip label={RAIL_LABEL[p.payoutRail]} className="border-primary/40 text-primary" />
+              <span className="text-xs text-muted-foreground">
+                Demo rate $1 = {p.demoUsdToNear} testnet NEAR (demo-only, not a market rate)
+              </span>
+            </div>
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted-foreground">Allowed payees ({p.allowedPayees.length})</span>
+              <span className="text-xs text-muted-foreground">Allowed NEAR testnet payees ({p.allowedNearPayees.length})</span>
+              {p.allowedNearPayees.length ? (
+                <ul className="flex flex-wrap gap-1.5">
+                  {p.allowedNearPayees.map((a) => (
+                    <li key={a}>
+                      <Chip label={a} className="font-normal" />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">None. Every NEAR payout will be blocked.</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">Allowed PayPal payees ({p.allowedPayees.length})</span>
               {p.allowedPayees.length ? (
                 <ul className="flex flex-wrap gap-1.5">
                   {p.allowedPayees.map((e) => (
@@ -517,6 +631,9 @@ function PolicyDialog({ policy, open, onClose }: { policy: PolicyResult; open: b
     cap: String(policy.monthlyBudgetCapUsd),
     auto: String(policy.autoApproveLimitUsd),
     payees: policy.allowedPayees.join("\n"),
+    rail: policy.payoutRail,
+    nearPayees: policy.allowedNearPayees.join("\n"),
+    rate: String(policy.demoUsdToNear),
   });
   const [draft, setDraft] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -537,6 +654,7 @@ function PolicyDialog({ policy, open, onClose }: { policy: PolicyResult; open: b
     onError: (err) => setError(errorMessage(err)),
   });
   const payees = draft.payees.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean);
+  const nearPayees = draft.nearPayees.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean);
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
@@ -555,9 +673,30 @@ function PolicyDialog({ policy, open, onClose }: { policy: PolicyResult; open: b
               monthlyBudgetCapUsd: Number(draft.cap),
               autoApproveLimitUsd: Number(draft.auto),
               allowedPayees: payees,
+              payoutRail: draft.rail,
+              allowedNearPayees: nearPayees,
+              demoUsdToNear: Number(draft.rate),
             });
           }}
         >
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="mb-1.5 text-sm font-medium">Payout rail</legend>
+            <div className="flex gap-2" role="radiogroup" aria-label="Payout rail">
+              {(["paypal", "near"] as const).map((r) => (
+                <Button
+                  key={r}
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.rail === r}
+                  variant={draft.rail === r ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDraft({ ...draft, rail: r })}
+                >
+                  {RAIL_LABEL[r]}
+                </Button>
+              ))}
+            </div>
+          </fieldset>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="policy-cap">Monthly cap (USD)</Label>
@@ -573,7 +712,7 @@ function PolicyDialog({ policy, open, onClose }: { policy: PolicyResult; open: b
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="policy-payees">Allowed payees</Label>
+            <Label htmlFor="policy-payees">Allowed PayPal payees</Label>
             <Textarea
               id="policy-payees"
               rows={4}
@@ -584,6 +723,27 @@ function PolicyDialog({ policy, open, onClose }: { policy: PolicyResult; open: b
             <span id="policy-payees-hint" className="text-xs text-muted-foreground">
               One PayPal email per line, up to {policy.limits.maxPayees}. ({payees.length} entered)
             </span>
+          </div>
+          <div className="grid grid-cols-[2fr_1fr] gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="policy-near-payees">Allowed NEAR testnet payees</Label>
+              <Textarea
+                id="policy-near-payees"
+                rows={3}
+                value={draft.nearPayees}
+                onChange={(e) => setDraft({ ...draft, nearPayees: e.target.value })}
+              />
+              <span className="text-xs text-muted-foreground">
+                One .testnet account per line, up to {policy.limits.maxPayees}. ({nearPayees.length} entered)
+              </span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="policy-rate">Demo rate: NEAR per $1</Label>
+              <Input id="policy-rate" inputMode="decimal" value={draft.rate} onChange={(e) => setDraft({ ...draft, rate: e.target.value })} />
+              <span className="text-xs text-muted-foreground">
+                Demo-only, not a market rate. {policy.limits.minUsdToNear} to {policy.limits.maxUsdToNear}.
+              </span>
+            </div>
           </div>
           {error ? (
             <p role="alert" className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">

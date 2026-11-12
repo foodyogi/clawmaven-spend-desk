@@ -2,6 +2,17 @@
 
 All notable user-facing changes to this app are documented here.
 
+## 0.1.12 — 2026-11-12
+
+### Added (branch `near`, testnet only)
+
+- NEAR payout rail in the app.
+  - The stored spend policy gains `payoutRail` (`paypal` by default), allowed NEAR testnet payees and a demo-only USD-to-NEAR rate ($1 = 0.001 testnet NEAR). All three are human-only, in the Spend Policy card.
+  - `execute-payout` keeps its `needsApproval` predicate and budget reservation, then pays through PayPal or the NEAR treasury contract by the live rail.
+  - A contract refusal releases the budget and writes a `blocked_on_chain` receipt naming the on-chain outcome. A NEAR error writes `near_error`.
+- Payments and receipts gain `payeeNearAccount` and `nearTxHash` through an additive migration. The seed tasks map to `m22spend-payee1`, `payee2` and `payee3.testnet`.
+- The desk shows the active rail, and NEAR receipts link their transaction on testnet.nearblocks.io.
+
 ## 0.1.11 — 2026-11-12
 
 ### Changed (branch `near`, testnet only)

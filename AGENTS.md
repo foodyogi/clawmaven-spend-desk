@@ -47,6 +47,10 @@ The Spend Desk page is `/desk` (view `desk`): Budget, Approval queue and Receipt
 | `list-receipts` | Receipts newest first, optionally by `paymentId` |
 | `reset-demo` | UI/CLI only (`agentTool: false`): clear payments, receipts and spend, restore seed tasks |
 | `get-policy` | Live spend policy: monthly cap, auto-approve limit, allowed payees (read-only) |
-| `update-policy` | **Human-only.** Change the policy from the Spend Policy card. `agentTool: false`, `uiOnly: true`, and `run()` rejects any caller but the frontend |
+| `update-policy` | **Human-only.** Also sets the payout rail (`paypal` or `near`), allowed NEAR testnet payees and the demo-only USD-to-NEAR rate.  Change the policy from the Spend Policy card. `agentTool: false`, `uiOnly: true`, and `run()` rejects any caller but the frontend |
 
 **Governance rule:** the agent must never be able to raise its own limits. The active policy lives in the `spend_policy` table (seeded from `policy.json`; `reset-demo` restores it). Only a person can change it, through `update-policy` from the UI. The table is on the doctor `dbToolScopingDenylist`, so the agent's raw database tools cannot write it either. `execute-payout` and `list-payments` read the live policy on every call.
+
+## NEAR payout rail (branch `near`, testnet only)
+
+When the stored `payoutRail` is `near`, `execute-payout` keeps the same `needsApproval` predicate and budget reservation, then calls the treasury contract (`server/spend-desk/near.ts`) instead of PayPal. It signs only with the agent's function-call key (`payout` on `NEAR_CONTRACT_ID`), with the payment id as the idempotency key. A `false` from the contract is an on-chain refusal: the budget is released and the receipt is `blocked_on_chain`, naming the contract's outcome. Receipts and payments carry `payeeNearAccount` and `nearTxHash`. The USD-to-NEAR conversion is a fixed demo rate, not a market rate.

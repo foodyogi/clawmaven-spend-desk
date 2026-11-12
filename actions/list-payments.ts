@@ -7,7 +7,7 @@ import { paymentOut, toPayment } from "../server/spend-desk/types.js";
 
 export default defineAction({
   description:
-    'List payments with their task title and status. Open payments (proposed / awaiting_approval) also carry outlook: what executePayout would do now — "auto_pay", "needs_approval", "blocked_over_budget" or "blocked_payee_not_allowed".',
+    'List payments with their task title, status, PayPal payee and NEAR payee, plus the live payout rail ("paypal" or "near"). Open payments (proposed / awaiting_approval) also carry outlook: what executePayout would do now on that rail — "auto_pay", "needs_approval", "blocked_over_budget" or "blocked_payee_not_allowed".',
   schema: z.object({
     status: z
       .enum(["open", "all"])
@@ -15,6 +15,7 @@ export default defineAction({
       .describe('"all" (default) = every payment; "open" = only proposed / awaiting_approval payments'),
   }),
   outputSchema: z.object({
+    rail: z.enum(["paypal", "near"]),
     payments: z.array(
       paymentOut.extend({
         taskTitle: z.string().nullable(),
@@ -38,10 +39,13 @@ export default defineAction({
                 amountCents: r.amountCents,
                 remainingCents,
                 autoApproveLimitCents: budget.autoApproveLimitCents,
-                payeeAllowed: isAllowedPayee(active, r.payeeEmail),
+                payeeAllowed:
+                  active.payoutRail === "near"
+                    ? active.allowedNearPayees.some((p) => p.toLowerCase() === r.payeeNearAccount?.toLowerCase())
+                    : isAllowedPayee(active, r.payeeEmail),
               })
             : null,
       }));
-    return { payments };
+    return { rail: active.payoutRail, payments };
   },
 });

@@ -10,6 +10,8 @@ export const spendTasks = pgTable("spend_tasks", {
   description: text("description").notNull(),
   amountCents: integer("amount_cents").notNull(),
   payeeEmail: text("payee_email").notNull(),
+  /** NEAR testnet payee for the NEAR rail (null on rows created before it). */
+  payeeNearAccount: text("payee_near_account"),
   // completed | payment_proposed | paid | blocked
   status: text("status").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -21,6 +23,8 @@ export const spendPayments = pgTable("spend_payments", {
   amountCents: integer("amount_cents").notNull(),
   payeeEmail: text("payee_email").notNull(),
   memo: text("memo").notNull(),
+  payeeNearAccount: text("payee_near_account"),
+  nearTxHash: text("near_tx_hash"),
   // proposed | awaiting_approval | approved | rejected | paid | blocked | error
   status: text("status").notNull(),
   proposedBy: text("proposed_by").notNull(),
@@ -38,6 +42,8 @@ export const spendReceipts = pgTable("spend_receipts", {
   approver: text("approver").notNull(),
   paypalBatchId: text("paypal_batch_id"),
   paypalItemId: text("paypal_item_id"),
+  payeeNearAccount: text("payee_near_account"),
+  nearTxHash: text("near_tx_hash"),
   budgetRemainingAfterCents: integer("budget_remaining_after_cents").notNull(),
   detail: text("detail").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -57,6 +63,12 @@ export const spendPolicy = pgTable("spend_policy", {
   monthlyCapCents: integer("monthly_cap_cents").notNull(),
   autoApproveLimitCents: integer("auto_approve_limit_cents").notNull(),
   allowedPayees: jsonb("allowed_payees").$type<string[]>().notNull(),
+  // "paypal" | "near"
+  payoutRail: text("payout_rail").notNull().default("paypal"),
+  /** Null means the policy.json default. */
+  allowedNearPayees: jsonb("allowed_near_payees").$type<string[]>(),
+  /** DEMO-ONLY rate: micro-NEAR per USD. Null means the policy.json default. */
+  nearMicroPerUsd: integer("near_micro_per_usd"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   updatedBy: text("updated_by").notNull(),
 });

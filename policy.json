@@ -7,6 +7,13 @@
     "sb-zyjmt53707494@personal.example.com",
     "sb-houoq53707143@personal.example.com"
   ],
+  "payoutRail": "paypal",
+  "allowedNearPayees": [
+    "m22spend-payee1.testnet",
+    "m22spend-payee2.testnet",
+    "m22spend-payee3.testnet"
+  ],
+  "demoUsdToNear": 0.001,
   "demoMonth": "2026-11",
-  "notes": "Demo policy for ClawMaven Spend Desk. allowedPayees are PayPal sandbox personal accounts (P1, P2, P3)."
+  "notes": "Demo policy for ClawMaven Spend Desk. allowedPayees are PayPal sandbox personal accounts (P1, P2, P3); allowedNearPayees are NEAR testnet accounts. demoUsdToNear is a fixed DEMO-ONLY conversion ($1 = 0.001 testnet NEAR), not a market rate."
 }

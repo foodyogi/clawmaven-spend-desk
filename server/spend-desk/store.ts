@@ -3,7 +3,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDbExec, sql as rawSql } from "@agent-native/core/db";
 
 import { getDb, schema } from "../db/index.js";
-import { loadPolicy, toCents } from "./policy.js";
+import { loadPolicy, type PayoutRail, toCents, toMicroNearPerUsd } from "./policy.js";
 
 const { spendBudget, spendPayments, spendPolicy, spendReceipts, spendTasks } = schema;
 
@@ -77,7 +77,7 @@ export async function insertPayment(values: typeof spendPayments.$inferInsert): 
 export async function transitionPayment(
   id: string,
   from: string[],
-  patch: Partial<Pick<PaymentRow, "status" | "amountCents" | "payeeEmail" | "memo">>,
+  patch: Partial<Pick<PaymentRow, "status" | "amountCents" | "payeeEmail" | "memo" | "payeeNearAccount" | "nearTxHash">>,
 ): Promise<PaymentRow | undefined> {
   const [row] = await getDb()
     .update(spendPayments)
@@ -114,19 +114,37 @@ export interface ActivePolicy {
   monthlyCapCents: number;
   autoApproveLimitCents: number;
   allowedPayees: string[];
+  payoutRail: PayoutRail;
+  allowedNearPayees: string[];
+  /** DEMO-ONLY rate: micro-NEAR per USD. */
+  nearMicroPerUsd: number;
   updatedAt: Date | null;
   updatedBy: string;
 }
 
-/** The live spend policy from Postgres; policy.json defaults if the row is missing. */
+/** The live spend policy from Postgres; policy.json defaults if the row or a NEAR field is missing. */
 export async function getActivePolicy(): Promise<ActivePolicy> {
-  const [row] = await getDb().select().from(spendPolicy).where(eq(spendPolicy.id, "active"));
-  if (row) return row;
   const file = loadPolicy();
+  const [row] = await getDb().select().from(spendPolicy).where(eq(spendPolicy.id, "active"));
+  if (row) {
+    return {
+      monthlyCapCents: row.monthlyCapCents,
+      autoApproveLimitCents: row.autoApproveLimitCents,
+      allowedPayees: row.allowedPayees,
+      payoutRail: row.payoutRail === "near" ? "near" : "paypal",
+      allowedNearPayees: row.allowedNearPayees ?? file.allowedNearPayees,
+      nearMicroPerUsd: row.nearMicroPerUsd ?? toMicroNearPerUsd(file.demoUsdToNear),
+      updatedAt: row.updatedAt,
+      updatedBy: row.updatedBy,
+    };
+  }
   return {
     monthlyCapCents: toCents(file.monthlyBudgetCapUsd),
     autoApproveLimitCents: toCents(file.autoApproveLimitUsd),
     allowedPayees: file.allowedPayees,
+    payoutRail: file.payoutRail,
+    allowedNearPayees: file.allowedNearPayees,
+    nearMicroPerUsd: toMicroNearPerUsd(file.demoUsdToNear),
     updatedAt: null,
     updatedBy: "policy.json",
   };
@@ -136,12 +154,26 @@ export async function getActivePolicy(): Promise<ActivePolicy> {
  * Saves the policy and the month's budget cap and auto limit in one statement,
  * so the two can never disagree. Returns false if the policy row is missing.
  */
-export async function savePolicy(month: string, policy: { monthlyCapCents: number; autoApproveLimitCents: number; allowedPayees: string[] }, updatedBy: string): Promise<boolean> {
+export async function savePolicy(
+  month: string,
+  policy: {
+    monthlyCapCents: number;
+    autoApproveLimitCents: number;
+    allowedPayees: string[];
+    payoutRail: PayoutRail;
+    allowedNearPayees: string[];
+    nearMicroPerUsd: number;
+  },
+  updatedBy: string,
+): Promise<boolean> {
   const { rows } = await getDbExec().execute(rawSql`WITH p AS (
       UPDATE spend_policy
       SET monthly_cap_cents = ${rawSql.value(policy.monthlyCapCents)},
           auto_approve_limit_cents = ${rawSql.value(policy.autoApproveLimitCents)},
           allowed_payees = ${rawSql.value(JSON.stringify(policy.allowedPayees))}::jsonb,
+          payout_rail = ${rawSql.value(policy.payoutRail)},
+          allowed_near_payees = ${rawSql.value(JSON.stringify(policy.allowedNearPayees))}::jsonb,
+          near_micro_per_usd = ${rawSql.value(policy.nearMicroPerUsd)},
           updated_at = now(),
           updated_by = ${rawSql.value(updatedBy)}
       WHERE id = 'active'

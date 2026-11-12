@@ -1,6 +1,6 @@
 import type { MigrationEntry } from "@agent-native/core/db";
 
-import { seedDemo, seedPolicy } from "../spend-desk/seed.js";
+import { fillSeedNearPayees, seedDemo, seedPolicy } from "../spend-desk/seed.js";
 
 export const SPEND_DESK_MIGRATIONS: MigrationEntry[] = [
   {
@@ -75,6 +75,27 @@ CREATE TABLE IF NOT EXISTS spend_budget (
     sql: {},
     run: async (exec) => {
       await seedPolicy(exec);
+    },
+  },
+  {
+    // Additive only: the PayPal app on main ignores these columns.
+    version: 5,
+    name: "near-rail-columns",
+    sql: `ALTER TABLE spend_policy ADD COLUMN IF NOT EXISTS payout_rail TEXT NOT NULL DEFAULT 'paypal';
+ALTER TABLE spend_policy ADD COLUMN IF NOT EXISTS allowed_near_payees JSONB;
+ALTER TABLE spend_policy ADD COLUMN IF NOT EXISTS near_micro_per_usd INTEGER;
+ALTER TABLE spend_tasks ADD COLUMN IF NOT EXISTS payee_near_account TEXT;
+ALTER TABLE spend_payments ADD COLUMN IF NOT EXISTS payee_near_account TEXT;
+ALTER TABLE spend_payments ADD COLUMN IF NOT EXISTS near_tx_hash TEXT;
+ALTER TABLE spend_receipts ADD COLUMN IF NOT EXISTS payee_near_account TEXT;
+ALTER TABLE spend_receipts ADD COLUMN IF NOT EXISTS near_tx_hash TEXT;`,
+  },
+  {
+    version: 6,
+    name: "near-rail-seed-payees",
+    sql: {},
+    run: async (exec) => {
+      await fillSeedNearPayees(exec);
     },
   },
 ];

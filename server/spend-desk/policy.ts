@@ -11,6 +11,10 @@ const policySchema = z.object({
   autoApproveLimitUsd: z.number().nonnegative(),
   currency: z.literal("USD"),
   allowedPayees: z.array(z.string().email()).min(1),
+  payoutRail: z.enum(["paypal", "near"]).default("paypal"),
+  allowedNearPayees: z.array(z.string()).default([]),
+  /** DEMO-ONLY fixed conversion: testnet NEAR per 1 USD. Not a market rate. */
+  demoUsdToNear: z.number().positive().default(0.001),
   demoMonth: z.string().regex(/^\d{4}-\d{2}$/),
   notes: z.string().optional(),
 });
@@ -46,13 +50,45 @@ export function isAllowedPayee(policy: Pick<Policy, "allowedPayees">, email: str
   return policy.allowedPayees.some((p) => p.toLowerCase() === normalized);
 }
 
-/** Bounds update-policy enforces (USD). */
-export const POLICY_LIMITS = { minCapUsd: 1, maxCapUsd: 1000, maxPayees: 10 } as const;
+/** Bounds update-policy enforces (USD; the demo rate in testnet NEAR per USD). */
+export const POLICY_LIMITS = {
+  minCapUsd: 1,
+  maxCapUsd: 1000,
+  maxPayees: 10,
+  minUsdToNear: 0.0001,
+  maxUsdToNear: 0.01,
+} as const;
+
+export type PayoutRail = "paypal" | "near";
+export const PAYOUT_RAILS: readonly PayoutRail[] = ["paypal", "near"];
 
 export interface PolicyInput {
   monthlyBudgetCapUsd: number;
   autoApproveLimitUsd: number;
   allowedPayees: string[];
+  payoutRail: PayoutRail;
+  allowedNearPayees: string[];
+  /** DEMO-ONLY: testnet NEAR per 1 USD. */
+  demoUsdToNear: number;
+}
+
+// NEAR account id rules (lowercase, 2 to 64 chars, parts joined by "-" or "_",
+// separated by "."), and testnet only for this demo.
+const NEAR_ACCOUNT = /^(?=.{2,64}$)(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
+
+export function isTestnetAccountId(id: string): boolean {
+  return NEAR_ACCOUNT.test(id) && id.endsWith(".testnet");
+}
+
+/** Micro-NEAR per USD, the integer the database stores for the demo rate. */
+export function toMicroNearPerUsd(nearPerUsd: number): number {
+  return Math.round(nearPerUsd * 1_000_000);
+}
+
+/** Exact yoctoNEAR for a USD amount in cents at a micro-NEAR-per-USD rate. */
+export function centsToYocto(cents: number, microNearPerUsd: number): bigint {
+  // yocto = cents/100 USD × micro/1e6 NEAR per USD × 1e24 yocto per NEAR
+  return BigInt(cents) * BigInt(microNearPerUsd) * 10n ** 16n;
 }
 
 const EMAIL = z.string().email();
@@ -78,9 +114,29 @@ export function validatePolicyInput(input: PolicyInput): { ok: true; value: Poli
   const bad = payees.filter((p) => !EMAIL.safeParse(p).success);
   if (bad.length) errors.push(`Not a valid email: ${bad.join(", ")}.`);
   if (payees.length > maxPayees) errors.push(`At most ${maxPayees} allowed payees.`);
+  if (!PAYOUT_RAILS.includes(input.payoutRail)) errors.push('Payout rail must be "paypal" or "near".');
+  const nearPayees = [...new Set(input.allowedNearPayees.map((p) => p.trim().toLowerCase()).filter(Boolean))];
+  const badNear = nearPayees.filter((p) => !isTestnetAccountId(p));
+  if (badNear.length) errors.push(`Not a NEAR testnet account id: ${badNear.join(", ")}.`);
+  if (nearPayees.length > maxPayees) errors.push(`At most ${maxPayees} allowed NEAR payees.`);
+  const rate = input.demoUsdToNear;
+  const { minUsdToNear, maxUsdToNear } = POLICY_LIMITS;
+  if (!Number.isFinite(rate) || rate < minUsdToNear || rate > maxUsdToNear || Math.abs(rate * 1e6 - Math.round(rate * 1e6)) > 1e-6) {
+    errors.push(`Demo rate must be between ${minUsdToNear} and ${maxUsdToNear} testnet NEAR per $1 (up to 6 decimals).`);
+  }
   return errors.length
     ? { ok: false, errors }
-    : { ok: true, value: { monthlyBudgetCapUsd: cap, autoApproveLimitUsd: auto, allowedPayees: payees } };
+    : {
+        ok: true,
+        value: {
+          monthlyBudgetCapUsd: cap,
+          autoApproveLimitUsd: auto,
+          allowedPayees: payees,
+          payoutRail: input.payoutRail,
+          allowedNearPayees: nearPayees,
+          demoUsdToNear: rate,
+        },
+      };
 }
 
 function isWholeCents(usd: number): boolean {

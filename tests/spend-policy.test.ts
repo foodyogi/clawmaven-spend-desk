@@ -74,7 +74,14 @@ describe("update-policy is human-only", () => {
 });
 
 describe("validation boundaries", () => {
-  const v = (patch: Partial<typeof DEFAULTS>) => validatePolicyInput({ ...DEFAULTS, ...patch });
+  const v = (patch: Partial<typeof DEFAULTS>) =>
+    validatePolicyInput({
+      ...DEFAULTS,
+      payoutRail: "paypal",
+      allowedNearPayees: ["m22spend-payee1.testnet", "m22spend-payee2.testnet", "m22spend-payee3.testnet"],
+      demoUsdToNear: 0.001,
+      ...patch,
+    });
 
   it("accepts a cap from $1 to $1,000", () => {
     expect(v({ monthlyBudgetCapUsd: 1, autoApproveLimitUsd: 0 }).ok).toBe(true);

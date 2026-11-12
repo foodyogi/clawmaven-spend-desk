@@ -92,7 +92,7 @@ The repo was started on Nov 7, 2026 with the Agent-Native create command (`--sta
 
 ## NEAR work in progress (branch `near`)
 
-This branch is adding a **NEAR testnet payout rail** for the [NEAR HACKATHON](https://nearhackathon.com). It is work in progress. So far: a hardened Rust treasury contract with Sandbox tests, deployed on testnet, and a testnet smoke script (`pnpm near:smoke`). The app does not use the NEAR rail yet.
+This branch is adding a **NEAR testnet payout rail** for the [NEAR HACKATHON](https://nearhackathon.com). It is work in progress. So far: a hardened Rust treasury contract with Sandbox tests, deployed on testnet; a testnet smoke script (`pnpm near:smoke`); and the NEAR rail in the app. A person switches the **Payout rail** to NEAR in the Spend Policy card, and the same approval flow then pays from the treasury contract, with NEAR transaction links on receipts. The USD-to-NEAR conversion is a fixed **demo-only** rate ($1 = 0.001 testnet NEAR), not a market rate.
 
 - **Baseline (not for NEAR judging):** everything up to tag [`paypal-hackathon-submission`](https://github.com/foodyogi/clawmaven-spend-desk/tree/paypal-hackathon-submission) (`c6f747c`, v0.1.8): the Agent-Native app, the PayPal Payouts sandbox rail, the human-only spend policy, and the screens described above. That version is the PayPal AI Hackathon submission, and `main` and the live site still run it.
 - **New NEAR work:** only the commits on [`near`](https://github.com/foodyogi/clawmaven-spend-desk/tree/near) after that tag. See the diff: [paypal-hackathon-submission...near](https://github.com/foodyogi/clawmaven-spend-desk/compare/paypal-hackathon-submission...near).
