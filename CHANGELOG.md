@@ -2,6 +2,20 @@
 
 All notable user-facing changes to this app are documented here.
 
+## 0.1.11 — 2026-11-12
+
+### Changed (branch `near`, testnet only)
+
+- Treasury contract hardened:
+  - owner-only `pause` and `unpause` (the kill switch)
+  - a total budget cap, with `get_remaining`
+  - owner-only setters for both caps and the payee allowlist, plus `reset_spent` for a new demo period
+  - an on-chain audit log of every agent payout request, including refusals, with the paged `get_audit_log`
+
+  Policy refusals now return `false` and are recorded instead of failing the transaction. Unauthorized callers and attached deposits still fail.
+- Redeployed fresh to `m22spend-treasury2.testnet` (the v1 state layout is not compatible).
+- `pnpm near:smoke` gains `--over-cap` and `--pause-cycle`; the default run is unchanged.
+
 ## 0.1.10 — 2026-11-12
 
 ### Added (branch `near`, testnet only)
